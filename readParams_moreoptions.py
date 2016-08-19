@@ -28,6 +28,11 @@ def getgeom(filename):
     return D, (ah,aq), (dxcu,dycu,dxcv,dycv,dxbu,dybu,dxt,dyt), f
 
 def getdims(filename):
+    """
+    Usage:
+    | (xh,yh), (xq,yq), (zi,zl), time = getdims(filename)
+    | This function returns all the dimensions from any MOM6 output file.
+    """
     fh = mfdset(filename)
     xq = fh.variables['xq'][:]
     yq = fh.variables['yq'][:]
@@ -39,13 +44,24 @@ def getdims(filename):
     fh.close()
     return (xh,yh), (xq,yq), (zi,zl), time
 
-def getuvhe(filename,i):
+def getuvhe(var,filename,wlon=-25,elon=0,slat=10,nlat=50,
+        zs=0,ze=None,ts=0,te=None, xhxq='xh',yhyq='yh'):
+    """
+    Usage:
+    | var = (var,filename,wlon,elon,slat,nlat,zs,ze,ts,te,xhxq,yhyq)
+    | This function extracts a slice from a MOM6 output file in netcdf format.
+    | The x and y limits for slicing are given in degrees, whereas depth and
+    | time are given in index numbers.
+    """
+    (xh,yh), (xq,yq), (zi,zl), time = getdims(filename)
+    x = eval(xhxq)
+    y = eval(yhyq)
+    xs = (x >= wlon).nonzero()[0][0]
+    xe = (x <= elon).nonzero()[0][-1]
+    ys = (y >= slat).nonzero()[0][0]
+    ye = (y <= nlat).nonzero()[0][-1]
+
     fh = mfdset(filename)
-    h = fh.variables['h'][i,:,:,:] 
-    e = fh.variables['e'][i,:,:,:] 
-    el = (e[0:-1,:,:] + e[1:,:,:])/2;
-    u = fh.variables['u'][i,:,:,:]
-    v = fh.variables['v'][i,:,:,:]
+    return fh.variables[var][ts:te,zs:ze,ys:ye,xs:xe]
     fh.close()
-    return (u,v,h,e,el)
 
