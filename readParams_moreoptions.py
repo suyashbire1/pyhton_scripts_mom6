@@ -52,6 +52,7 @@ def getuvhe(var,filename,wlon=-25,elon=0,slat=10,nlat=50,
     | This function extracts a slice from a MOM6 output file in netcdf format.
     | The x and y limits for slicing are given in degrees, whereas depth and
     | time are given in index numbers.
+    | ** Future: Add capability for striding.
     """
     (xh,yh), (xq,yq), (zi,zl), time = getdims(filename)
     x = eval(xhxq)
