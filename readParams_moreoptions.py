@@ -44,11 +44,11 @@ def getdims(filename):
     fh.close()
     return (xh,yh), (xq,yq), (zi,zl), time
 
-def getuvhe(var,filename,wlon=-25,elon=0,slat=10,nlat=50,
+def getvar(var,filename,wlon=-25,elon=0,slat=10,nlat=60,
         zs=0,ze=None,ts=0,te=None, xhxq='xh',yhyq='yh'):
     """
     Usage:
-    | var = (var,filename,wlon,elon,slat,nlat,zs,ze,ts,te,xhxq,yhyq)
+    | var = getvar(var,filename,wlon,elon,slat,nlat,zs,ze,ts,te,xhxq,yhyq)
     | This function extracts a slice from a MOM6 output file in netcdf format.
     | The x and y limits for slicing are given in degrees, whereas depth and
     | time are given in index numbers.
