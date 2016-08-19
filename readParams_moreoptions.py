@@ -63,6 +63,6 @@ def getvar(var,filename,wlon=-25,elon=0,slat=10,nlat=60,
     ye = (y <= nlat).nonzero()[0][-1]
 
     fh = mfdset(filename)
-    return fh.variables[var][ts:te,zs:ze,ys:ye,xs:xe]
+    return fh.variables[var][ts:te,zs:ze,ys:ye+1,xs:xe+1]
     fh.close()
 
