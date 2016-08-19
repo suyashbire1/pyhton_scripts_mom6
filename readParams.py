@@ -17,8 +17,9 @@ def getgeom(filename):
     dybu = fhgeo.variables['dyBu'][:]
     dxt = fhgeo.variables['dxT'][:]
     dyt = fhgeo.variables['dyT'][:]
+    f = fhgeo.variables['f'][:]
     fhgeo.close()
-    return D, (ah,aq), (dxcu,dycu,dxcv,dycv,dxbu,dybu,dxt,dyt)
+    return D, (ah,aq), (dxcu,dycu,dxcv,dycv,dxbu,dybu,dxt,dyt), f
 
 def getdims(filename):
     fh = mfdset(filename)

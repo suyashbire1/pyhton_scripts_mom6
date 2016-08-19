@@ -44,7 +44,7 @@ def plotoceanstats(fil,savfil=None):
 
 def plotvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,twa=True,savfil=None):
 
-    D, (ah,aq), (dxcu,dycu,dxcv,dycv,dxbu,dybu,dxt,dyt) = rdp.getgeom(geofil)
+    D, (ah,aq), (dxcu,dycu,dxcv,dycv,dxbu,dybu,dxt,dyt), f = rdp.getgeom(geofil)
     
     (xh,yh), (xq,yq), (zi,zl), time = rdp.getdims(fil)
     
@@ -84,7 +84,9 @@ def plotvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,twa=True,savfil=None
             um += u/nt
             vm += v/nt
 
-        print((i+1)/nt*100)
+        #print((i+1)/nt*100)
+        sys.stdout.write('\r'+str(int((i+1)/nt*100)))
+        sys.stdout.flush()
     
     if twa:
         um = utwa/hm_cu
@@ -93,13 +95,15 @@ def plotvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,twa=True,savfil=None
     plt.figure()
     
     ax = plt.subplot(3,2,1)
-    (X,Y,epl,eplmn,eplmx),(xs,xe),(ys,ye) = getisopyc(em,xstart,xend,
+    (X1,Y1,epl,eplmn,eplmx),(xs,xe),(ys,ye) = getisopyc(em,xstart,xend,
                                                   ystart,yend,zs,ze,xh,yh,zi,meanax)
+    print(np.shape(epl))
     (X,Y,P,Pmn,Pmx),(xs,xe),(ys,ye) = sliceDomain(um[:,:,:],elm,xstart,xend,
                                                   ystart,yend,zs,ze,xq,yh,zl,meanax)
     Vctr = np.linspace(Pmn,Pmx,num=12,endpoint=True)
     Vcbar = (Vctr[1:] + Vctr[:-1])/2
     im = ax.contourf(X, Y, P, Vctr, cmap=plt.cm.RdBu_r)
+    im2 = ax.contour(X1,Y1,epl,epl.shape[0],colors='k')
     cbar = plt.colorbar(im, ticks=Vcbar)
     cbar.formatter.set_powerlimits((-3, 4))
     cbar.update_ticks()
@@ -111,6 +115,7 @@ def plotvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,twa=True,savfil=None
     Vctr = np.linspace(Pmn,Pmx,num=12,endpoint=True)
     Vcbar = (Vctr[1:] + Vctr[:-1])/2
     im = ax.contourf(X, Y, P, Vctr, cmap=plt.cm.RdBu_r)
+    im2 = ax.contour(X1,Y1,epl,epl.shape[0],colors='k')
     cbar = plt.colorbar(im, ticks=Vcbar)
     ax.set_yticklabels([])
     cbar.formatter.set_powerlimits((-3, 4))
@@ -126,7 +131,7 @@ def plotvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,twa=True,savfil=None
 
 def plotsshanim(geofil,fil,desfps,savfil=None):
        
-    D, (ah,aq), (dxcu,dycu,dxcv,dycv,dxbu,dybu,dxt,dyt) = rdp.getgeom(geofil)
+    D, (ah,aq), (dxcu,dycu,dxcv,dycv,dxbu,dybu,dxt,dyt), f = rdp.getgeom(geofil)
     
     (xh,yh), (xq,yq), (zi,zl), time = rdp.getdims(fil)
     
@@ -148,9 +153,11 @@ def plotsshanim(geofil,fil,desfps,savfil=None):
     ylim = [10,50]    # actual values of y in degrees
     zlim = [0,1]     # indices of zl or zi
   
-    X,Y,P,Pmn,Pmx = plotrange(e,xlim[0],xlim[-1],
-                                ylim[0],ylim[-1],
-                                zlim[0],zlim[-1],xh,yh,zi,e,0)
+    (X,Y,P,Pmn,Pmx),(xs,xe),(ys,ye) = sliceDomain(e,e,xlim[0],xlim[-1],
+                                                  ylim[0],ylim[-1],zlim[0],zlim[-1],xq,yh,zi,0)
+#    X,Y,P,Pmn,Pmx = plotrange(e,xlim[0],xlim[-1],
+#                                ylim[0],ylim[-1],
+#                                zlim[0],zlim[-1],xh,yh,zi,e,0)
     fig = plt.figure()
     ax = plt.axes()
     Vctr = np.linspace(-emax,emax,num=12,endpoint=True)
@@ -171,9 +178,11 @@ def update_contour_plot(i,fil,ax,fig,xlim,ylim,zlim,x,y,z,meanax,emax):
     fh = mfdset(fil)
     var = fh.variables['e'][i,:,:,:] 
     fh.close()
-    X,Y,P,Pmn,Pmx = plotrange(var,xlim[0],xlim[-1],
-                                  ylim[0],ylim[-1],
-                                  zlim[0],zlim[-1],x,y,z,var,meanax)
+    (X,Y,P,Pmn,Pmx),(xs,xe),(ys,ye) = sliceDomain(var,var,xlim[0],xlim[-1],
+                                                  ylim[0],ylim[-1],zlim[0],zlim[-1],x,y,z,0)
+#    X,Y,P,Pmn,Pmx = plotrange(var,xlim[0],xlim[-1],
+#                                  ylim[0],ylim[-1],
+#                                  zlim[0],zlim[-1],x,y,z,var,meanax)
     ax.cla()
     Vctr = np.linspace(-emax,emax,num=12,endpoint=True)
     im = ax.contourf(X, Y, P, Vctr, cmap=plt.cm.RdBu_r)
