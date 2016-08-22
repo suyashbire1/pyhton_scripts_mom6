@@ -63,25 +63,9 @@ def getvar(var,filename,wlon=-25,elon=0,slat=10,nlat=60,
     ys = (y >= slat).nonzero()[0][0]
     ye = (y <= nlat).nonzero()[0][-1]
     fh = mfdset(filename)
-    if te:
-        if ze:
-            rvar = fh.variables[var][ts:te+1,zs:ze+1,ys:ye+1,xs:xe+1]
-            rz = z[zs:ze+1]
-            rt = time[ts:te+1]
-        else:
-            rvar = fh.variables[var][ts:te+1,zs:,ys:ye+1,xs:xe+1]
-            rz = z[zs:]
-            rt = time[ts:te+1]
-    else:
-        if ze:
-            rvar = fh.variables[var][ts:,zs:ze+1,ys:ye+1,xs:xe+1]
-            rz = z[zs:ze+1]
-            rt = time[ts:]
-        else:
-            rvar = fh.variables[var][ts:,zs:,ys:ye+1,xs:xe+1]
-            rz = z[zs:]
-            rt = time[ts:]
-
+    rvar = fh.variables[var][ts:te,zs:ze,ys:ye+1,xs:xe+1]
+    rz = z[zs:ze]
+    rt = time[ts:te]
     rx = x[xs:xe+1]
     ry = y[ys:ye+1]
     return (rt,rz,ry,rx), rvar 
