@@ -45,7 +45,7 @@ def getdims(filename):
     return (xh,yh), (xq,yq), (zi,zl), time
 
 def getvar(var,filename,wlon=-25,elon=0,slat=10,nlat=60,
-        zs=0,ze=None,ts=0,te=None, xhxq='xh',yhyq='yh'):
+        zs=0,ze=None,ts=0,te=None, xhxq='xh',yhyq='yh',zlzi='zl'):
     """
     Usage:
     | var = getvar(var,filename,wlon,elon,slat,nlat,zs,ze,ts,te,xhxq,yhyq)
@@ -57,12 +57,33 @@ def getvar(var,filename,wlon=-25,elon=0,slat=10,nlat=60,
     (xh,yh), (xq,yq), (zi,zl), time = getdims(filename)
     x = eval(xhxq)
     y = eval(yhyq)
+    z = eval(zlzi)
     xs = (x >= wlon).nonzero()[0][0]
     xe = (x <= elon).nonzero()[0][-1]
     ys = (y >= slat).nonzero()[0][0]
     ye = (y <= nlat).nonzero()[0][-1]
+    if te:
+        if ze:
+            rvar = fh.variables[var][ts:te+1,zs:ze+1,ys:ye+1,xs:xe+1]
+            rz = z[zs:ze+1]
+            rt = time[ts:te+1]
+        else:
+            rvar = fh.variables[var][ts:te+1,zs:,ys:ye+1,xs:xe+1]
+            rz = z[zs:]
+            rt = time[ts:te+1]
+    else:
+        if ze:
+            rvar = fh.variables[var][ts:,zs:ze+1,ys:ye+1,xs:xe+1]
+            rz = z[zs:ze+1]
+            rt = time[ts:]
+        else:
+            rvar = fh.variables[var][ts:,zs:,ys:ye+1,xs:xe+1]
+            rz = z[zs:]
+            rt = time[ts:]
 
+    rx = x[xs:xe+1]
+    ry = y[ys:ye+1]
     fh = mfdset(filename)
-    return fh.variables[var][ts:te,zs:ze,ys:ye+1,xs:xe+1]
+    return (rt,rz,ry,rx), rvar 
     fh.close()
 
