@@ -1,1 +1,0 @@
-# pyhton_scripts_mom6
