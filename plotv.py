@@ -12,7 +12,8 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         if i not in meanax:
             keepax += (i,)
 
-    D = rdp1.getgeom(geofil)[0]
+    #D = rdp1.getgeom(geofil)[0]
+    D = rdp1.getgeom(geofil,wlon=xstart,elon=xend,slat=ystart,nlat=yend)[0]
     
     time = rdp1.getdims(fil)[3]
     nt = time.size
@@ -36,6 +37,8 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
                     slat=ystart,nlat=yend, zs=zs,ze=ze,ts=0,te=1)
             hm_u = frhatu*D[np.newaxis,np.newaxis,:,:]
             hm_v = frhatv*D[np.newaxis,np.newaxis,:,:]
+            hm_u = np.ma.masked_array(hm_u,mask=(hm_u<=1e0).astype(int))
+            hm_v = np.ma.masked_array(hm_v,mask=(hm_v<=1e0).astype(int))
             hm_u /= nt
             hm_v /= nt
 
@@ -56,6 +59,8 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
                         slat=ystart,nlat=yend, zs=zs,ze=ze,ts=i,te=i+1)[1]
                 h_u = frhatu*D[np.newaxis,np.newaxis,:,:]
                 h_v = frhatv*D[np.newaxis,np.newaxis,:,:]
+                h_u = np.ma.masked_array(h_u,mask=(h_u<=1e0).astype(int))
+                h_v = np.ma.masked_array(h_v,mask=(h_v<=1e0).astype(int))
                 hm_u += h_u/nt
                 hm_v += h_v/nt
 
@@ -112,6 +117,7 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
 
     Pu = um.squeeze()
     Pv = vm.squeeze()
+    print(np.max(Pu),np.max(Pv))
     datau = (Xu,Yu,Pu)
     datav = (Xv,Yv,Pv)
     return datau, datav

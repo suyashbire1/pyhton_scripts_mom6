@@ -2,7 +2,7 @@ import numpy as np
 from netCDF4 import Dataset as dset
 from netCDF4 import MFDataset as mfdset
 
-def getgeom(filename):
+def getgeom(filename,wlon=-25,elon=0,slat=10,nlat=60):
     """
     Usage: 
     | D, (ah,aq), (dxcu,dycu,dxcv,dycv,dxbu,dybu,dxt,dyt), f = getgeom(filename)
@@ -12,18 +12,24 @@ def getgeom(filename):
     | and f at Bu points.
     """
     fhgeo = dset(filename, mode='r')
-    D = fhgeo.variables['D'][:]
-    ah = fhgeo.variables['Ah'][:]
-    aq = fhgeo.variables['Aq'][:]
-    dxcu = fhgeo.variables['dxCu'][:]
-    dycu = fhgeo.variables['dyCu'][:]
-    dxcv = fhgeo.variables['dxCv'][:]
-    dycv = fhgeo.variables['dyCv'][:]
-    dxbu = fhgeo.variables['dxBu'][:]
-    dybu = fhgeo.variables['dyBu'][:]
-    dxt = fhgeo.variables['dxT'][:]
-    dyt = fhgeo.variables['dyT'][:]
-    f = fhgeo.variables['f'][:]
+    lath = fhgeo.variables['lath'][:]
+    lonh = fhgeo.variables['lonh'][:]
+    xs = (lonh >= wlon).nonzero()[0][0]
+    xe = (lonh <= elon).nonzero()[0][-1]
+    ys = (lath >= slat).nonzero()[0][0]
+    ye = (lath <= nlat).nonzero()[0][-1]
+    D = fhgeo.variables['D'][ys:ye+1,xs:xe+1]
+    ah = fhgeo.variables['Ah'][ys:ye+1,xs:xe+1]
+    aq = fhgeo.variables['Aq'][ys:ye+1,xs:xe+1]
+    dxcu = fhgeo.variables['dxCu'][ys:ye+1,xs:xe+1]
+    dycu = fhgeo.variables['dyCu'][ys:ye+1,xs:xe+1]
+    dxcv = fhgeo.variables['dxCv'][ys:ye+1,xs:xe+1]
+    dycv = fhgeo.variables['dyCv'][ys:ye+1,xs:xe+1]
+    dxbu = fhgeo.variables['dxBu'][ys:ye+1,xs:xe+1]
+    dybu = fhgeo.variables['dyBu'][ys:ye+1,xs:xe+1]
+    dxt = fhgeo.variables['dxT'][ys:ye+1,xs:xe+1]
+    dyt = fhgeo.variables['dyT'][ys:ye+1,xs:xe+1]
+    f = fhgeo.variables['f'][ys:ye+1,xs:xe+1]
     fhgeo.close()
     return D, (ah,aq), (dxcu,dycu,dxcv,dycv,dxbu,dybu,dxt,dyt), f
 
