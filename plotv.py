@@ -112,7 +112,6 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
 
     Pu = um.squeeze()
     Pv = vm.squeeze()
-    print(Pu.shape,Pv.shape)
     datau = (Xu,Yu,Pu)
     datav = (Xv,Yv,Pv)
     return datau, datav
