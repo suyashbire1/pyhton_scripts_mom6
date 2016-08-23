@@ -6,8 +6,10 @@ import matplotlib.pyplot as plt
 from netCDF4 import Dataset as dset
 from netCDF4 import MFDataset as mfdset
 import readParams as rdp
+import readParams_moreoptions as rdp1
 from manipulateDomain import *
 import matplotlib.animation as animation
+from getvaratz import *
 
 def plotoceanstats(fil,savfil=None):
     (layer,interface,time), (en,ape,ke), (maxcfltrans,maxcfllin), ntrunc = rdp.getoceanstats(fil)
@@ -64,9 +66,26 @@ def plotvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,twa=True,savfil=None
     vm = np.zeros((nz,ny,nx))
     vtwa = np.zeros((nz,ny,nx))
 
+    (t,zl1,yh1,xq1),um = rdp1.getvar('u',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
+            zs=zs,ze=ze,ts=0,te=1,xhxq='xq')
+    (t,zl1,yq1,xh1),vm = rdp1.getvar('v',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
+            zs=zs,ze=ze,ts=0,te=1,yhyq='yq')
+    (t,zi1,yh1,xh1),em = rdp1.getvar('e',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
+            zs=zs,ze=ze,ts=0,te=1)
+    um /=nt
+    vm /=nt
+    em /=nt
+    elm = 0.5*(em[:,0:-1,:,:]+em[:,1:,:,:])
     
-    for i in range(nt):
-        (u,v,h,e,el) = rdp.getuvhe(fil,i)
+    for i in range(1,nt):
+#        (u,v,h,e,el) = rdp.getuvhe(fil,i)
+        (t,zl1,yh1,xq1),u = rdp1.getvar('u',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
+                zs=zs,ze=ze,ts=i,te=i+1,xhxq='xq')
+        (t,zl1,yq1,xh1),v = rdp1.getvar('v',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
+                zs=zs,ze=ze,ts=i,te=i+1,yhyq='yq')
+        (t,zi1,yh1,xh1),e = rdp1.getvar('e',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
+                zs=zs,ze=ze,ts=i,te=i+1)
+        el = 0.5*(e[:,0:-1,:,:]+e[:,1:,:,:])
         em += e/nt
         elm += el/nt
         if twa:
@@ -95,27 +114,25 @@ def plotvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,twa=True,savfil=None
     plt.figure()
     
     ax = plt.subplot(3,2,1)
-    (X1,Y1,epl,eplmn,eplmx),(xs,xe),(ys,ye) = getisopyc(em,xstart,xend,
-                                                  ystart,yend,zs,ze,xh,yh,zi,meanax)
-    print(np.shape(epl))
-    (X,Y,P,Pmn,Pmx),(xs,xe),(ys,ye) = sliceDomain(um[:,:,:],elm,xstart,xend,
-                                                  ystart,yend,zs,ze,xq,yh,zl,meanax)
-    Vctr = np.linspace(Pmn,Pmx,num=12,endpoint=True)
+    z = np.linspace(-np.max(D),-1,num=50)
+    umatz = getvaratz(um,z,em)
+    umax = np.max(np.absolute(np.mean(umatz[0,:,:,:],axis=1)))
+    Vctr = np.linspace(-umax,umax,num=12,endpoint=True)
     Vcbar = (Vctr[1:] + Vctr[:-1])/2
-    im = ax.contourf(X, Y, P, Vctr, cmap=plt.cm.RdBu_r)
-    im2 = ax.contour(X1,Y1,epl,epl.shape[0],colors='k')
+    im = ax.contourf(xq1, z, np.mean(umatz[0,:,:,:],axis=1),Vctr, cmap=plt.cm.RdBu_r)
+    #im2 = ax.contour(xh1,zi1,np.mean(em[0,:,:,:],axis=1),colors='k')
     cbar = plt.colorbar(im, ticks=Vcbar)
     cbar.formatter.set_powerlimits((-3, 4))
     cbar.update_ticks()
    # ax.set_xticks([-70, -50, -30, -10])
     
     ax = plt.subplot(3,2,2)
-    (X,Y,P,Pmn,Pmx),(xs,xe),(ys,ye) = sliceDomain(vm[:,:,:],elm,xstart,xend,
-                                                  ystart,yend,zs,ze,xh,yq,zl,meanax)
-    Vctr = np.linspace(Pmn,Pmx,num=12,endpoint=True)
+    vmatz = getvaratz(vm,z,em)
+    vmax = np.max(np.absolute(np.mean(vmatz[0,:,:,:],axis=1)))
+    Vctr = np.linspace(-vmax,vmax,num=12,endpoint=True)
     Vcbar = (Vctr[1:] + Vctr[:-1])/2
-    im = ax.contourf(X, Y, P, Vctr, cmap=plt.cm.RdBu_r)
-    im2 = ax.contour(X1,Y1,epl,epl.shape[0],colors='k')
+    im = ax.contourf(xh1, z, np.mean(vmatz[0,:,:,:],axis=1),Vctr, cmap=plt.cm.RdBu_r)
+    #im2 = ax.contour(xh1,zi1,np.mean(em[0,:,:,:],axis=1),colors='k')
     cbar = plt.colorbar(im, ticks=Vcbar)
     ax.set_yticklabels([])
     cbar.formatter.set_powerlimits((-3, 4))
