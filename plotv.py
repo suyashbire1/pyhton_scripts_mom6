@@ -1,3 +1,4 @@
+import sys
 import readParams_moreoptions as rdp1
 from getvaratz import *
 import matplotlib.pyplot as plt
@@ -28,6 +29,7 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         vm /= nt
         em /= nt
         if twa:
+            print('Using twa..')
             dimhu,frhatu=rdp1.getvar('frhatu',fil,wlon=xstart,elon=xend,
                     slat=ystart,nlat=yend, zs=zs,ze=ze,ts=0,te=1)
             dimhv,frhatv=rdp1.getvar('frhatv',fil,wlon=xstart,elon=xend,
@@ -57,10 +59,16 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
                 hm_u += h_u/nt
                 hm_v += h_v/nt
 
-            sys.stdout.write('\r'+str(int((i+1)/nt*100)))
+            sys.stdout.write('\r'+str(int((i+1)/nt*100))+'% done...')
             sys.stdout.flush()
             
+        um = np.ma.apply_over_axes(np.mean, u, meanax)
+        vm = np.ma.apply_over_axes(np.mean, v, meanax)
+        em = np.ma.apply_over_axes(np.mean, e, meanax)
+
         if twa:
+            hm_u = np.ma.apply_over_axes(np.mean, hm_u, meanax)
+            hm_v = np.ma.apply_over_axes(np.mean, hm_v, meanax)
             um /= hm_u
             vm /= hm_v
         
@@ -79,6 +87,7 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         em = np.ma.apply_over_axes(np.mean, e, meanax)
 
         if twa:
+            print('Using twa..')
             dimhu,frhatu=rdp1.getvar('frhatu',fil,wlon=xstart,elon=xend,
                     slat=ystart,nlat=yend, zs=zs,ze=ze)
             dimhv,frhatv=rdp1.getvar('frhatv',fil,wlon=xstart,elon=xend,
@@ -103,15 +112,16 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
 
     Pu = um.squeeze()
     Pv = vm.squeeze()
+    print(Pu.shape,Pv.shape)
     datau = (Xu,Yu,Pu)
     datav = (Xv,Yv,Pv)
     return datau, datav
 
 
 def plotvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
-        twa=True,savfil=None):
+        twa=True,savfil=None,loop=True):
     datau,datav = extractvel(geofil,fil,xstart,xend,
-            ystart,yend,zs,ze,meanax,twa)
+            ystart,yend,zs,ze,meanax,twa,loop)
     plt.figure()
     ax = plt.subplot(3,2,1)
     im = m6plot(datau,ax)
