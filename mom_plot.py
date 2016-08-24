@@ -29,4 +29,3 @@ def m6plot(data,ax=None,xticks=None,yticks=None,
                 format='eps', transparent=False, bbox_inches='tight')
     else:
         return im
-

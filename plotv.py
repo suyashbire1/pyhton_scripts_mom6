@@ -67,9 +67,9 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             sys.stdout.write('\r'+str(int((i+1)/nt*100))+'% done...')
             sys.stdout.flush()
             
-        um = np.ma.apply_over_axes(np.mean, u, meanax)
-        vm = np.ma.apply_over_axes(np.mean, v, meanax)
-        em = np.ma.apply_over_axes(np.mean, e, meanax)
+        um = np.ma.apply_over_axes(np.mean, um, meanax)
+        vm = np.ma.apply_over_axes(np.mean, vm, meanax)
+        em = np.ma.apply_over_axes(np.mean, em, meanax)
 
         if twa:
             hm_u = np.ma.apply_over_axes(np.mean, hm_u, meanax)
