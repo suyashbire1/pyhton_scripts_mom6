@@ -26,21 +26,25 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
                 zs=zs,ze=ze,yhyq='yq',ts=0,te=1)
         dime,em = rdp1.getvar('e',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
                 zs=zs,ze=ze,ts=0,te=1)
-        um /= nt
-        vm /= nt
-        em /= nt
         if twa:
             print('Using twa..')
             dimhu,frhatu=rdp1.getvar('frhatu',fil,wlon=xstart,elon=xend,
-                    slat=ystart,nlat=yend, zs=zs,ze=ze,ts=0,te=1)
+                    slat=ystart,nlat=yend,xhxq='xq',zs=zs,ze=ze,ts=0,te=1)
             dimhv,frhatv=rdp1.getvar('frhatv',fil,wlon=xstart,elon=xend,
-                    slat=ystart,nlat=yend, zs=zs,ze=ze,ts=0,te=1)
+                    slat=ystart,nlat=yend,yhyq='yq', zs=zs,ze=ze,ts=0,te=1)
             hm_u = frhatu*D[np.newaxis,np.newaxis,:,:]
             hm_v = frhatv*D[np.newaxis,np.newaxis,:,:]
             hm_u = np.ma.masked_array(hm_u,mask=(hm_u<=1e0).astype(int))
             hm_v = np.ma.masked_array(hm_v,mask=(hm_v<=1e0).astype(int))
+            uhm = um*hm_u/nt
+            vhm = vm*hm_v/nt
             hm_u /= nt
             hm_v /= nt
+        else:
+            um /= nt
+            vm /= nt
+
+        em /= nt
 
         for i in range(1,nt):
             u = rdp1.getvar('u',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
@@ -49,33 +53,42 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
                     zs=zs,ze=ze,yhyq='yq',ts=i,te=i+1)[1]
             e = rdp1.getvar('e',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
                     zs=zs,ze=ze,ts=i,te=i+1)[1]
-            um += u/nt
-            vm += v/nt
-            em += e/nt
             if twa:
                 frhatu=rdp1.getvar('frhatu',fil,wlon=xstart,elon=xend,
-                        slat=ystart,nlat=yend, zs=zs,ze=ze,ts=i,te=i+1)[1]
+                        slat=ystart,nlat=yend, zs=zs,ze=ze,xhxq='xq',ts=i,te=i+1)[1]
                 frhatv=rdp1.getvar('frhatv',fil,wlon=xstart,elon=xend,
-                        slat=ystart,nlat=yend, zs=zs,ze=ze,ts=i,te=i+1)[1]
+                        slat=ystart,nlat=yend, zs=zs,ze=ze,yhyq='yq',ts=i,te=i+1)[1]
                 h_u = frhatu*D[np.newaxis,np.newaxis,:,:]
                 h_v = frhatv*D[np.newaxis,np.newaxis,:,:]
                 h_u = np.ma.masked_array(h_u,mask=(h_u<=1e0).astype(int))
                 h_v = np.ma.masked_array(h_v,mask=(h_v<=1e0).astype(int))
+                uh = u*h_u
+                vh = v*h_v
+                uhm += uh/nt
+                vhm += vh/nt
                 hm_u += h_u/nt
                 hm_v += h_v/nt
+            else:
+                um += u/nt
+                vm += v/nt
+                
+            em += e/nt
 
             sys.stdout.write('\r'+str(int((i+1)/nt*100))+'% done...')
             sys.stdout.flush()
             
+
+        if twa:
+            hm_u = np.ma.apply_over_axes(np.mean, hm_u, meanax[0])
+            hm_v = np.ma.apply_over_axes(np.mean, hm_v, meanax[0])
+            uhm = np.ma.apply_over_axes(np.mean, uhm, meanax[0])
+            vhm = np.ma.apply_over_axes(np.mean, vhm, meanax[0])
+            um = uhm/hm_u
+            vm = vhm/hm_v
+
         um = np.ma.apply_over_axes(np.mean, um, meanax)
         vm = np.ma.apply_over_axes(np.mean, vm, meanax)
         em = np.ma.apply_over_axes(np.mean, em, meanax)
-
-        if twa:
-            hm_u = np.ma.apply_over_axes(np.mean, hm_u, meanax)
-            hm_v = np.ma.apply_over_axes(np.mean, hm_v, meanax)
-            um /= hm_u
-            vm /= hm_v
         
     else:
         print('Reading data...')
@@ -87,9 +100,6 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
                 zs=zs,ze=ze)
         print('Done!')
 
-        um = np.ma.apply_over_axes(np.mean, u, meanax)
-        vm = np.ma.apply_over_axes(np.mean, v, meanax)
-        em = np.ma.apply_over_axes(np.mean, e, meanax)
 
         if twa:
             print('Using twa..')
@@ -99,10 +109,20 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
                     slat=ystart,nlat=yend, zs=zs,ze=ze)
             h_u = frhatu*D[np.newaxis,np.newaxis,:,:]
             h_v = frhatv*D[np.newaxis,np.newaxis,:,:]
-            hm_u = np.ma.apply_over_axes(np.mean, h_u, meanax)
-            hm_v = np.ma.apply_over_axes(np.mean, h_v, meanax)
+            h_u = np.ma.masked_array(h_u,mask=(h_u<=1e0).astype(int))
+            h_v = np.ma.masked_array(h_v,mask=(h_v<=1e0).astype(int))
+            uh = u*h_u
+            vh = v*h_v
+            um = np.ma.apply_over_axes(np.mean, uh, meanax[0])
+            vm = np.ma.apply_over_axes(np.mean, vh, meanax[0])
+            hm_u = np.ma.apply_over_axes(np.mean, h_u, meanax[0])
+            hm_v = np.ma.apply_over_axes(np.mean, h_v, meanax[0])
             um /= hm_u
             vm /= hm_v
+
+        um = np.ma.apply_over_axes(np.mean, u, meanax)
+        vm = np.ma.apply_over_axes(np.mean, v, meanax)
+        em = np.ma.apply_over_axes(np.mean, e, meanax)
 
     Xu = dimu[keepax[1]]
     Xv = dimv[keepax[1]]
