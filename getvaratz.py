@@ -14,7 +14,7 @@ def getvaratz(var,z,e):
         varatz[i,indices[1]] = var1[indices[0],indices[1]]
 
     varatz = varatz.reshape((z.size,var.shape[0],var.shape[2],
-        var.shape[3])).swapaxes(0,1)
+        var.shape[3],-1)).swapaxes(0,1)
     return varatz
 
 def getTatz(zl,z,e):

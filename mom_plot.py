@@ -1,5 +1,5 @@
 def m6plot(data,ax=None,xticks=None,yticks=None,
-        xlab=None,ylab=None,savfil=None):
+        xlab=None,ylab=None,savfil=None,Zmax=None):
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -7,7 +7,8 @@ def m6plot(data,ax=None,xticks=None,yticks=None,
         ax = plt.gca()
     
     X,Y,Z = data
-    Zmax = np.nanmax(np.absolute(Z))
+    if not Zmax:
+        Zmax = np.nanmax(np.absolute(Z))
     print(Zmax)
     Zctr = np.linspace(-Zmax,Zmax,num=12,endpoint=True)
     Zcbar = (Zctr[1:] + Zctr[:-1])/2
