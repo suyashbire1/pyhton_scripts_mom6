@@ -100,10 +100,10 @@ def plot_momx(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
     ax = plt.subplot(3,2,6)
     im = m6plot((X,Y,P[:,:,5]),ax,Zmax=cmax)
 
-    im = m6plot((X,Y,np.sum(P,axis=2)),Zmax=cmax)
-    
     if savfil:
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
     else:
         plt.show()
+
+    #im = m6plot((X,Y,np.sum(P,axis=2)),Zmax=cmax)
