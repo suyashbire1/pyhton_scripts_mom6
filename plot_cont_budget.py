@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from mom_plot import m6plot
 import numpy as np
 from netCDF4 import MFDataset as mfdset
-import time as tim
+import time
 
 def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
       loop=True,alreadysaved=False):
@@ -17,7 +17,6 @@ def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
 
         D, (ah,aq) = rdp1.getgeom(geofil,wlon=xstart,
                 elon=xend,slat=ystart,nlat=yend)[0:2]
-        time = rdp1.getdims(fil)[3]
         (uxs,uxe),_,dimu = rdp1.getlatlonindx(fil,wlon=xstart,elon=xend,
                 slat=ystart, nlat=yend,zs=zs,ze=ze,xhxq='xq')
         _,(vys,vye),dimv = rdp1.getlatlonindx(fil,wlon=xstart,elon=xend,
@@ -27,7 +26,7 @@ def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         _,_,dimh = rdp1.getlatlonindx(fil,wlon=xstart,elon=xend,
                 slat=ystart, nlat=yend,zs=zs,ze=ze)
         nt = dimu[0].size
-        t0 = tim.time()
+        t0 = time.time()
         fh = mfdset(fil)
 
         if loop:
@@ -70,7 +69,7 @@ def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
                 sys.stdout.flush()
                 
         fh.close()
-        print('Total reading time: {}s'.format(tim.time()-t0))
+        print('Total reading time: {}s'.format(time.time()-t0))
 
         terms = np.ma.concatenate(( dhdtm[:,:,:,:,np.newaxis],
                                     uhxm[:,:,:,:,np.newaxis],
