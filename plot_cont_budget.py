@@ -1,8 +1,10 @@
 import sys
 import readParams_moreoptions as rdp1
-from getvaratz import *
 import matplotlib.pyplot as plt
 from mom_plot import m6plot
+import numpy as np
+from netCDF4 import MFDataset as mfdset
+import time as tim
 
 def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
       loop=True,alreadysaved=False):
@@ -16,27 +18,26 @@ def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         D, (ah,aq) = rdp1.getgeom(geofil,wlon=xstart,
                 elon=xend,slat=ystart,nlat=yend)[0:2]
         time = rdp1.getdims(fil)[3]
-        nt = time.size
-        #D, (ah,aq), (dxcu,dycu,dxcv,dycv,dxbu,dybu,dxt,dyt) = rdp1.getgeom(geofil)
-        #(xh,yh), (xq,yq), (zi,zl), time = rdp1.getdims(fil)
+        (uxs,uxe),_,dimu = rdp1.getlatlonindx(fil,wlon=xstart,elon=xend,
+                slat=ystart, nlat=yend,zs=zs,ze=ze,xhxq='xq')
+        _,(vys,vye),dimv = rdp1.getlatlonindx(fil,wlon=xstart,elon=xend,
+                slat=ystart, nlat=yend,zs=zs,ze=ze,yhyq='yq')
+        (xs,xe),(ys,ye),dime = rdp1.getlatlonindx(fil,wlon=xstart,elon=xend,
+                slat=ystart, nlat=yend,zs=zs,ze=ze,zlzi='zi')
+        _,_,dimh = rdp1.getlatlonindx(fil,wlon=xstart,elon=xend,
+                slat=ystart, nlat=yend,zs=zs,ze=ze)
+        nt = dimu[0].size
+        t0 = tim.time()
+        fh = mfdset(fil)
 
         if loop:
             print('Reading data using loop...')
-            dimu,uh = rdp1.getvar('uh',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                    zs=zs,ze=ze,xhxq='xq',ts=0,te=1)
-            dimv,vh = rdp1.getvar('vh',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                    zs=zs,ze=ze,yhyq='yq',ts=0,te=1)
-            dime,em = rdp1.getvar('e',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                    zs=zs,ze=ze,ts=0,te=1,zlzi='zi')
-            dimh,dhdtm = rdp1.getvar('dhdt',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                    zs=zs,ze=ze,ts=0,te=1)
-            wd = rdp1.getvar('wd',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                    zs=zs,ze=ze,ts=0,te=1,zlzi='zi')[1]
+            uh = fh.variables['uh'][0:1,zs:ze,ys:ye,uxs:uxe]
+            vh = fh.variables['vh'][0:1,zs:ze,vys:vye,xs:xe]
+            em = fh.variables['e'][0:1,zs:ze,ys:ye,xs:xe]/nt
+            dhdtm = fh.variables['dhdt'][0:1,zs:ze,ys:ye,xs:xe]/nt
+            wd = fh.variables['wd'][0:1,zs:ze,ys:ye,xs:xe]
             print(uh.shape,vh.shape,wd.shape,dhdtm.shape,em.shape)
-
-            em /= nt
-
-            dhdtm /= nt
 
             uh = np.ma.filled(uh.astype(float), 0)
             uhx = np.diff(uh,axis = 3)/ah
@@ -49,20 +50,11 @@ def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             wdm = np.diff(wd,axis=1)/nt
 
             for i in range(1,nt):
-                dimu,uh = rdp1.getvar('uh',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                        zs=zs,ze=ze,xhxq='xq',ts=0,te=1)
-                dimv,vh = rdp1.getvar('vh',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                        zs=zs,ze=ze,yhyq='yq',ts=0,te=1)
-                dime,e = rdp1.getvar('e',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                        zs=zs,ze=ze,ts=0,te=1,zlzi='zi')
-                dimh,dhdt = rdp1.getvar('dhdt',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                        zs=zs,ze=ze,ts=0,te=1)
-                wd = rdp1.getvar('wd',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                        zs=zs,ze=ze,ts=0,te=1,zlzi='zi')[1]
-
-                em += e/nt
-
-                dhdtm += dhdt/nt
+                uh = fh.variables['uh'][i:i+1,zs:ze,ys:ye,uxs:uxe]
+                vh = fh.variables['vh'][i:i+1,zs:ze,vys:vye,xs:xe]
+                em += fh.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
+                dhdtm += fh.variables['dhdt'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
+                wd = fh.variables['wd'][i:i+1,zs:ze,ys:ye,xs:xe]
 
                 uh = np.ma.filled(uh.astype(float), 0)
                 uhx = np.diff(uh,axis = 3)/ah
@@ -76,11 +68,14 @@ def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
 
                 sys.stdout.write('\r'+str(int((i+1)/nt*100))+'% done...')
                 sys.stdout.flush()
+                
+        fh.close()
+        print('Total reading time: {}s'.format(tim.time()-t0))
 
-        terms = np.concatenate((dhdtm[:,:,:,:,np.newaxis],
-                                uhxm[:,:,:,:,np.newaxis],
-                                vhym[:,:,:,:,np.newaxis],
-                                wdm[:,:,:,:,np.newaxis]),axis=4)
+        terms = np.ma.concatenate(( dhdtm[:,:,:,:,np.newaxis],
+                                    uhxm[:,:,:,:,np.newaxis],
+                                    vhym[:,:,:,:,np.newaxis],
+                                    wdm[:,:,:,:,np.newaxis]),axis=4)
 
         termsm = np.ma.apply_over_axes(np.mean, terms, meanax)
         elm = 0.5*(em[:,0:-1,:,:]+em[:,1:,:,:])
@@ -94,6 +89,9 @@ def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             X = np.meshgrid(X,dimh[1])[0]
 
         P = termsm.squeeze()
+        P = np.ma.filled(P.astype(float), np.nan)
+        X = np.ma.filled(X.astype(float), np.nan)
+        Y = np.ma.filled(Y.astype(float), np.nan)
         np.savez('cb_terms', X=X,Y=Y,P=P)
     else:
         npzfile = np.load('cb_terms.npz')

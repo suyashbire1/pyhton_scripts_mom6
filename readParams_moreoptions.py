@@ -50,7 +50,7 @@ def getdims(filename):
     fh.close()
     return (xh,yh), (xq,yq), (zi,zl), time
 
-def getvar(var,filename,wlon=-25,elon=0,slat=10,nlat=60,
+def getvar(var,fh,filename,wlon=-25,elon=0,slat=10,nlat=60,
         zs=0,ze=None,ts=0,te=None, xhxq='xh',yhyq='yh',zlzi='zl'):
     """
     Usage:
@@ -68,12 +68,25 @@ def getvar(var,filename,wlon=-25,elon=0,slat=10,nlat=60,
     xe = (x <= elon).nonzero()[0][-1]
     ys = (y >= slat).nonzero()[0][0]
     ye = (y <= nlat).nonzero()[0][-1]
-    fh = mfdset(filename)
     rvar = fh.variables[var][ts:te,zs:ze,ys:ye+1,xs:xe+1]
     rz = z[zs:ze]
     rt = time[ts:te]
     rx = x[xs:xe+1]
     ry = y[ys:ye+1]
     return (rt,rz,ry,rx), rvar 
-    fh.close()
 
+def getlatlonindx(filename,wlon=-25,elon=0,slat=10,nlat=60,
+        zs=0,ze=None,ts=0,te=None,xhxq='xh',yhyq='yh',zlzi='zl'):
+    (xh,yh), (xq,yq), (zi,zl), time = getdims(filename)
+    x = eval(xhxq)
+    y = eval(yhyq)
+    z = eval(zlzi)
+    xs = (x >= wlon).nonzero()[0][0]
+    xe = (x <= elon).nonzero()[0][-1]+1
+    ys = (y >= slat).nonzero()[0][0]
+    ye = (y <= nlat).nonzero()[0][-1]+1
+    rz = z[zs:ze]
+    rt = time[ts:te]
+    rx = x[xs:xe]
+    ry = y[ys:ye]
+    return (xs,xe),(ys,ye),(rt,rz,ry,rx)

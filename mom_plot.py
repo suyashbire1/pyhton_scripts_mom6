@@ -4,12 +4,12 @@ def m6plot(data,ax=None,xticks=None,yticks=None,
     import numpy as np
 
     if not ax:
-        ax = plt.gca()
+        f = plt.figure()
+        ax = f.gca()
     
     X,Y,Z = data
     if not Zmax:
         Zmax = np.nanmax(np.absolute(Z))
-    print(Zmax)
     Zctr = np.linspace(-Zmax,Zmax,num=12,endpoint=True)
     Zcbar = (Zctr[1:] + Zctr[:-1])/2
     im = ax.contourf(X, Y, Z, Zctr, cmap=plt.cm.RdBu_r)
