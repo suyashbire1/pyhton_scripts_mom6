@@ -37,27 +37,33 @@ def extract_twamomx_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         rvxv = fh.variables['rvxv'][0:1,zs:ze,ys:ye,xs:xe]
         pfu = fh.variables['PFu'][0:1,zs:ze,ys:ye,xs:xe]
         hagum = h_u*(cau - gkeu - rvxv + pfu)/nt
+        hagum = hagum.filled(0)
         
         hdudtviscm = h_u*fh.variables['du_dt_visc'][0:1,zs:ze,ys:ye,xs:xe]/nt
+        hdudtviscm = hdudtviscm.filled(0)
         hdiffum = h_u*fh.variables['diffu'][0:1,zs:ze,ys:ye,xs:xe]/nt
+        hdiffum = hdiffum.filled(0)
 
         dudtdia = fh.variables['dudt_dia'][0:1,zs:ze,ys:ye,xs:xe]
         wd = fh.variables['wd'][0:1,zs:ze,ys:ye,xs:xe]
         wd = np.diff(wd,axis=1)
         wd = np.concatenate((wd,wd[:,:,:,-1:]),axis=3)
         huwbm = (u*(wd[:,:,:,0:-1]+wd[:,:,:,1:])/2 - h_u*dudtdia)/nt
+        huwbm = huwbm.filled(0)
 
         uh = fh.variables['uh'][0:1,zs:ze,ys:ye,xs-1:xe]
         uh = np.ma.filled(uh.astype(float), 0)
         uhx = np.diff(uh,axis = 3)/ah
         uhx = np.concatenate((uhx,uhx[:,:,:,-1:]),axis=3)
         huuxpTm = (u*(uhx[:,:,:,0:-1]+uhx[:,:,:,1:])/2 - h_u*gkeu)/nt
+        huuxpTm = huuxpTm.filled(0)
 
         vh = fh.variables['vh'][0:1,zs:ze,ys-1:ye,xs:xe]
         vh = np.ma.filled(vh.astype(float), 0)
         vhy = np.diff(vh,axis = 2)/ah
         vhy = np.concatenate((vhy,vhy[:,:,:,-1:]),axis=3)
         huvymTm = (u*(vhy[:,:,:,0:-1]+vhy[:,:,:,1:])/2 - h_u*rvxv)/nt
+        huvymTm = huvymTm.filled(0)
 
         if 1 in keepax:
             em = fh.variables['e'][0:1,zs:ze,ys:ye,xs:xe]/nt
@@ -72,28 +78,33 @@ def extract_twamomx_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             gkeu = fh.variables['gKEu'][i:i+1,zs:ze,ys:ye,xs:xe]
             rvxv = fh.variables['rvxv'][i:i+1,zs:ze,ys:ye,xs:xe]
             pfu = fh.variables['PFu'][i:i+1,zs:ze,ys:ye,xs:xe]
-            hagum += h_u*(cau - gkeu - rvxv + pfu)/nt
+            hagum += (h_u*(cau - gkeu - rvxv + pfu)/nt).filled(0)
             
-            hdudtviscm += h_u*fh.variables['du_dt_visc'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
-            hdiffum += h_u*fh.variables['diffu'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
+            hdudtviscm += (h_u*fh.variables['du_dt_visc'][i:i+1,zs:ze,
+                ys:ye,xs:xe]/nt).filled(0)
+            hdiffum += (h_u*fh.variables['diffu'][i:i+1,zs:ze,
+                ys:ye,xs:xe]/nt).filled(0)
 
             dudtdia = fh.variables['dudt_dia'][i:i+1,zs:ze,ys:ye,xs:xe]
             wd = fh.variables['wd'][i:i+1,zs:ze,ys:ye,xs:xe]
             wd = np.diff(wd,axis=1)
             wd = np.concatenate((wd,wd[:,:,:,-1:]),axis=3)
-            huwbm += (u*(wd[:,:,:,0:-1]+wd[:,:,:,1:])/2 - h_u*dudtdia)/nt
+            huwbm += ((u*(wd[:,:,:,0:-1]+wd[:,:,:,1:])/2 -
+                h_u*dudtdia)/nt).filled(0)
 
             uh = fh.variables['uh'][i:i+1,zs:ze,ys:ye,xs-1:xe]
             uh = np.ma.filled(uh.astype(float), 0)
             uhx = np.diff(uh,axis = 3)/ah
             uhx = np.concatenate((uhx,uhx[:,:,:,-1:]),axis=3)
-            huuxpTm += (u*(uhx[:,:,:,0:-1]+uhx[:,:,:,1:])/2 - h_u*gkeu)/nt
+            huuxpTm += ((u*(uhx[:,:,:,0:-1]+uhx[:,:,:,1:])/2 -
+                h_u*gkeu)/nt).filled(0)
 
             vh = fh.variables['vh'][i:i+1,zs:ze,ys-1:ye,xs:xe]
             vh = np.ma.filled(vh.astype(float), 0)
             vhy = np.diff(vh,axis = 2)/ah
             vhy = np.concatenate((vhy,vhy[:,:,:,-1:]),axis=3)
-            huvymTm += (u*(vhy[:,:,:,0:-1]+vhy[:,:,:,1:])/2 - h_u*rvxv)/nt
+            huvymTm += ((u*(vhy[:,:,:,0:-1]+vhy[:,:,:,1:])/2 -
+                h_u*rvxv)/nt).filled(0)
             if 1 in keepax:
                 em += fh.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
 

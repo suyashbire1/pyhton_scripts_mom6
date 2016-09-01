@@ -149,10 +149,11 @@ def plotvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             ystart,yend,zs,ze,meanax,twa,loop)
     plt.figure()
     ax = plt.subplot(3,2,1)
-    im = m6plot(datau,ax)
+    im = m6plot(datau,ax,xlab='x from EB (Deg)',ylab='z (m)')
     
     ax = plt.subplot(3,2,2)
-    im = m6plot(datav,ax)
+    im = m6plot(datav,ax,xlab='x from EB (Deg)',ylab='z (m)')
+    ax.set_yticklabels([])
     
     if savfil:
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
