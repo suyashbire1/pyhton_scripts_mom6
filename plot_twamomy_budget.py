@@ -23,81 +23,91 @@ def extract_twamomy_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
 #        (xs,xe),(ys,ye),_ = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
 #                slat=ystart, nlat=yend,zs=zs,ze=ze)
         D, (ah,aq) = rdp1.getgeombyindx(geofil,xs,xe,ys,ye)[0:2]
-        nt = dimv[0].size
+        nt_const = dimv[0].size
         t0 = time.time()
 
         print('Reading data using loop...')
         v = fh.variables['v'][0:1,zs:ze,ys:ye,xs:xe]
+        nt = np.ones(v.shape)*nt_const
         frhatv = fh.variables['frhatv'][0:1,zs:ze,ys:ye,xs:xe]
         h_v = frhatv*D[np.newaxis,np.newaxis,:,:]
         h_v = np.ma.masked_array(h_v,mask=(h_v<=1e-3).astype(int))
+        nt[h_v<=1e-3] -= 1
 
         cav = fh.variables['CAv'][0:1,zs:ze,ys:ye,xs:xe]
         gkev = fh.variables['gKEv'][0:1,zs:ze,ys:ye,xs:xe]
         rvxu = fh.variables['rvxu'][0:1,zs:ze,ys:ye,xs:xe]
         pfv = fh.variables['PFv'][0:1,zs:ze,ys:ye,xs:xe]
-        hagvm = h_v*(cav - gkev - rvxu + pfv)/nt
+        hagvm = (h_v*(cav - gkev - rvxu + pfv)).filled(0)
+
         
-        hdvdtviscm = h_v*fh.variables['dv_dt_visc'][0:1,zs:ze,ys:ye,xs:xe]/nt
-        hdiffvm = h_v*fh.variables['diffv'][0:1,zs:ze,ys:ye,xs:xe]/nt
+        hdvdtviscm = (h_v*fh.variables['dv_dt_visc'][0:1,zs:ze,
+            ys:ye,xs:xe]).filled(0)
+        hdiffvm = (h_v*fh.variables['diffv'][0:1,zs:ze,ys:ye,xs:xe]).filled(0)
 
         dvdtdia = fh.variables['dvdt_dia'][0:1,zs:ze,ys:ye,xs:xe]
         wd = fh.variables['wd'][0:1,zs:ze,ys:ye,xs:xe]
         wd = np.diff(wd,axis=1)
         wd = np.concatenate((wd,wd[:,:,-1:,:]),axis=2)
-        hvwbm = (v*(wd[:,:,0:-1,:]+wd[:,:,1:,:])/2 - h_v*dvdtdia)/nt
+        hvwbm = ((v*(wd[:,:,0:-1,:]+wd[:,:,1:,:])/2 - h_v*dvdtdia)).filled(0)
 
         uh = fh.variables['uh'][0:1,zs:ze,ys:ye,xs-1:xe]
         uh = np.ma.filled(uh.astype(float), 0)
         uhx = np.diff(uh,axis = 3)/ah
         uhx = np.concatenate((uhx,uhx[:,:,-1:,:]),axis=2)
-        huvxpTm = (v*(uhx[:,:,0:-1,:]+uhx[:,:,1:,:])/2 - h_v*rvxu)/nt
+        huvxpTm = ((v*(uhx[:,:,0:-1,:]+uhx[:,:,1:,:])/2 - h_v*rvxu)).filled(0)
 
         vh = fh.variables['vh'][0:1,zs:ze,ys-1:ye,xs:xe]
         vh = np.ma.filled(vh.astype(float), 0)
         vhy = np.diff(vh,axis = 2)/ah
         vhy = np.concatenate((vhy,vhy[:,:,-1:,:]),axis=2)
-        hvvymTm = (v*(vhy[:,:,0:-1,:]+vhy[:,:,1:,:])/2 - h_v*gkev)/nt
+        hvvymTm = ((v*(vhy[:,:,0:-1,:]+vhy[:,:,1:,:])/2 - h_v*gkev)).filled(0)
 
         if 1 in keepax:
-            em = fh.variables['e'][0:1,zs:ze,ys:ye,xs:xe]/nt
+            em = fh.variables['e'][0:1,zs:ze,ys:ye,xs:xe]/nt_const
 
-        for i in range(1,nt):
+        for i in range(1,nt_const):
             v = fh.variables['v'][i:i+1,zs:ze,ys:ye,xs:xe]
             frhatv = fh.variables['frhatv'][i:i+1,zs:ze,ys:ye,xs:xe]
             h_v = frhatv*D[np.newaxis,np.newaxis,:,:]
             h_v = np.ma.masked_array(h_v,mask=(h_v<=1e-3).astype(int))
+            nt[h_v<=1e-3] -= 1
 
             cav = fh.variables['CAv'][i:i+1,zs:ze,ys:ye,xs:xe]
             gkev = fh.variables['gKEv'][i:i+1,zs:ze,ys:ye,xs:xe]
             rvxu = fh.variables['rvxu'][i:i+1,zs:ze,ys:ye,xs:xe]
             pfv = fh.variables['PFv'][i:i+1,zs:ze,ys:ye,xs:xe]
-            hagvm += h_v*(cav - gkev - rvxu + pfv)/nt
+            hagvm += (h_v*(cav - gkev - rvxu + pfv)).filled(0)
             
-            hdvdtviscm += h_v*fh.variables['dv_dt_visc'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
-            hdiffvm += h_v*fh.variables['diffv'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
+            hdvdtviscm += (h_v*fh.variables['dv_dt_visc'][i:i+1,zs:ze,
+                ys:ye,xs:xe]).filled(0)
+            hdiffvm += (h_v*fh.variables['diffv'][i:i+1,zs:ze,
+                ys:ye,xs:xe]).filled(0)
 
             dvdtdia = fh.variables['dvdt_dia'][i:i+1,zs:ze,ys:ye,xs:xe]
             wd = fh.variables['wd'][i:i+1,zs:ze,ys:ye,xs:xe]
             wd = np.diff(wd,axis=1)
             wd = np.concatenate((wd,wd[:,:,-1:,:]),axis=2)
-            hvwbm += (v*(wd[:,:,0:-1,:]+wd[:,:,1:,:])/2 - h_v*dvdtdia)/nt
+            hvwbm += ((v*(wd[:,:,0:-1,:]+wd[:,:,1:,:])/2 -
+                h_v*dvdtdia)).filled(0)
 
             uh = fh.variables['uh'][i:i+1,zs:ze,ys:ye,xs-1:xe]
             uh = np.ma.filled(uh.astype(float), 0)
             uhx = np.diff(uh,axis = 3)/ah
             uhx = np.concatenate((uhx,uhx[:,:,-1:,:]),axis=2)
-            huvxpTm += (v*(uhx[:,:,0:-1,:]+uhx[:,:,1:,:])/2 - h_v*rvxu)/nt
+            huvxpTm += ((v*(uhx[:,:,0:-1,:]+uhx[:,:,1:,:])/2 -
+                h_v*rvxu)).filled(0)
 
             vh = fh.variables['vh'][i:i+1,zs:ze,ys-1:ye,xs:xe]
             vh = np.ma.filled(vh.astype(float), 0)
             vhy = np.diff(vh,axis = 2)/ah
             vhy = np.concatenate((vhy,vhy[:,:,-1:,:]),axis=2)
-            hvvymTm += (v*(vhy[:,:,0:-1,:]+vhy[:,:,1:,:])/2 - h_v*gkev)/nt
+            hvvymTm += ((v*(vhy[:,:,0:-1,:]+vhy[:,:,1:,:])/2 -
+                h_v*gkev)).filled(0)
             if 1 in keepax:
-                em += fh.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
+                em += fh.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]/nt_const
 
-            sys.stdout.write('\r'+str(int((i+1)/nt*100))+'% done...')
+            sys.stdout.write('\r'+str(int((i+1)/nt_const*100))+'% done...')
             sys.stdout.flush()
             
         fh.close()
@@ -108,7 +118,8 @@ def extract_twamomy_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
                                     -huvxpTm[:,:,:,:,np.newaxis],
                                     -hvvymTm[:,:,:,:,np.newaxis],
                                     hdvdtviscm[:,:,:,:,np.newaxis],
-                                    hdiffvm[:,:,:,:,np.newaxis]),axis=4)
+                                    hdiffvm[:,:,:,:,np.newaxis]),
+                                    axis=4)/nt[:,:,:,:,np.newaxis]
 
         termsm = np.ma.apply_over_axes(np.nanmean, terms, meanax)
 
