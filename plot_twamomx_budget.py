@@ -30,7 +30,7 @@ def extract_twamomx_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         u = fh.variables['u'][0:1,zs:ze,ys:ye,xs:xe]
         frhatu = fh.variables['frhatu'][0:1,zs:ze,ys:ye,xs:xe]
         h_u = frhatu*D[np.newaxis,np.newaxis,:,:]
-        h_u = np.ma.masked_array(h_u,mask=(h_u<=1e0).astype(int))
+        h_u = np.ma.masked_array(h_u,mask=(h_u<=1e-3).astype(int))
 
         cau = fh.variables['CAu'][0:1,zs:ze,ys:ye,xs:xe]
         gkeu = fh.variables['gKEu'][0:1,zs:ze,ys:ye,xs:xe]
@@ -66,7 +66,7 @@ def extract_twamomx_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             u = fh.variables['u'][i:i+1,zs:ze,ys:ye,xs:xe]
             frhatu = fh.variables['frhatu'][i:i+1,zs:ze,ys:ye,xs:xe]
             h_u = frhatu*D[np.newaxis,np.newaxis,:,:]
-            h_u = np.ma.masked_array(h_u,mask=(h_u<=1e0).astype(int))
+            h_u = np.ma.masked_array(h_u,mask=(h_u<=1e-3).astype(int))
 
             cau = fh.variables['CAu'][i:i+1,zs:ze,ys:ye,xs:xe]
             gkeu = fh.variables['gKEu'][i:i+1,zs:ze,ys:ye,xs:xe]
@@ -110,7 +110,7 @@ def extract_twamomx_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
                                     hdudtviscm[:,:,:,:,np.newaxis],
                                     hdiffum[:,:,:,:,np.newaxis]),axis=4)
 
-        termsm = np.ma.apply_over_axes(np.mean, terms, meanax)
+        termsm = np.ma.apply_over_axes(np.nanmean, terms, meanax)
 
         X = dimu[keepax[1]]
         Y = dimu[keepax[0]]

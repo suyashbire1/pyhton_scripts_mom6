@@ -30,7 +30,7 @@ def extract_twamomy_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         v = fh.variables['v'][0:1,zs:ze,ys:ye,xs:xe]
         frhatv = fh.variables['frhatv'][0:1,zs:ze,ys:ye,xs:xe]
         h_v = frhatv*D[np.newaxis,np.newaxis,:,:]
-        h_v = np.ma.masked_array(h_v,mask=(h_v<=1e0).astype(int))
+        h_v = np.ma.masked_array(h_v,mask=(h_v<=1e-3).astype(int))
 
         cav = fh.variables['CAv'][0:1,zs:ze,ys:ye,xs:xe]
         gkev = fh.variables['gKEv'][0:1,zs:ze,ys:ye,xs:xe]
@@ -66,7 +66,7 @@ def extract_twamomy_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             v = fh.variables['v'][i:i+1,zs:ze,ys:ye,xs:xe]
             frhatv = fh.variables['frhatv'][i:i+1,zs:ze,ys:ye,xs:xe]
             h_v = frhatv*D[np.newaxis,np.newaxis,:,:]
-            h_v = np.ma.masked_array(h_v,mask=(h_v<=1e0).astype(int))
+            h_v = np.ma.masked_array(h_v,mask=(h_v<=1e-3).astype(int))
 
             cav = fh.variables['CAv'][i:i+1,zs:ze,ys:ye,xs:xe]
             gkev = fh.variables['gKEv'][i:i+1,zs:ze,ys:ye,xs:xe]
@@ -110,7 +110,7 @@ def extract_twamomy_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
                                     hdvdtviscm[:,:,:,:,np.newaxis],
                                     hdiffvm[:,:,:,:,np.newaxis]),axis=4)
 
-        termsm = np.ma.apply_over_axes(np.mean, terms, meanax)
+        termsm = np.ma.apply_over_axes(np.nanmean, terms, meanax)
 
         X = dimv[keepax[1]]
         Y = dimv[keepax[0]]
