@@ -15,24 +15,17 @@ def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             if i not in meanax:
                 keepax += (i,)
 
-        D, (ah,aq) = rdp1.getgeom(geofil,wlon=xstart,
-                elon=xend,slat=ystart,nlat=yend)[0:2]
-        (uxs,uxe),_,dimu = rdp1.getlatlonindx(fil,wlon=xstart,elon=xend,
-                slat=ystart, nlat=yend,zs=zs,ze=ze,xhxq='xq')
-        _,(vys,vye),dimv = rdp1.getlatlonindx(fil,wlon=xstart,elon=xend,
-                slat=ystart, nlat=yend,zs=zs,ze=ze,yhyq='yq')
-        (xs,xe),(ys,ye),dime = rdp1.getlatlonindx(fil,wlon=xstart,elon=xend,
-                slat=ystart, nlat=yend,zs=zs,ze=ze,zlzi='zi')
-        _,_,dimh = rdp1.getlatlonindx(fil,wlon=xstart,elon=xend,
-                slat=ystart, nlat=yend,zs=zs,ze=ze)
-        nt = dimu[0].size
-        t0 = time.time()
         fh = mfdset(fil)
+        (xs,xe),(ys,ye),dimh = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
+                slat=ystart, nlat=yend,zs=zs,ze=ze)
+        D, (ah,aq) = rdp1.getgeombyindx(geofil,xs,xe,ys,ye)[0:2]
+        nt = dimh[0].size
+        t0 = time.time()
 
         if loop:
             print('Reading data using loop...')
-            uh = fh.variables['uh'][0:1,zs:ze,ys:ye,uxs:uxe]
-            vh = fh.variables['vh'][0:1,zs:ze,vys:vye,xs:xe]
+            uh = fh.variables['uh'][0:1,zs:ze,ys:ye,xs-1:xe]
+            vh = fh.variables['vh'][0:1,zs:ze,ys-1:ye,xs:xe]
             em = fh.variables['e'][0:1,zs:ze,ys:ye,xs:xe]/nt
             dhdtm = fh.variables['dhdt'][0:1,zs:ze,ys:ye,xs:xe]/nt
             wd = fh.variables['wd'][0:1,zs:ze,ys:ye,xs:xe]
@@ -49,8 +42,8 @@ def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             wdm = np.diff(wd,axis=1)/nt
 
             for i in range(1,nt):
-                uh = fh.variables['uh'][i:i+1,zs:ze,ys:ye,uxs:uxe]
-                vh = fh.variables['vh'][i:i+1,zs:ze,vys:vye,xs:xe]
+                uh = fh.variables['uh'][i:i+1,zs:ze,ys:ye,xs-1:xe]
+                vh = fh.variables['vh'][i:i+1,zs:ze,ys-1:ye,xs:xe]
                 em += fh.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
                 dhdtm += fh.variables['dhdt'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
                 wd = fh.variables['wd'][i:i+1,zs:ze,ys:ye,xs:xe]
