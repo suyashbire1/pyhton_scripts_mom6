@@ -3,6 +3,8 @@ import readParams_moreoptions as rdp1
 from getvaratz import *
 import matplotlib.pyplot as plt
 from mom_plot import m6plot
+from netCDF4 import MFDataset as mfdset
+import time
 
 def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         twa=True,loop=True):
@@ -12,62 +14,56 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         if i not in meanax:
             keepax += (i,)
 
-    #D = rdp1.getgeom(geofil)[0]
-    D = rdp1.getgeom(geofil,wlon=xstart,elon=xend,slat=ystart,nlat=yend)[0]
+    fh = mfdset(fil)
+    (uxs,uxe),(ys,ye),dimu = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
+            slat=ystart, nlat=yend,zs=zs,ze=ze,xhxq='xq')
+    (xs,xe),(vys,vye),dimv = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
+            slat=ystart, nlat=yend,zs=zs,ze=ze,yhyq='yq')
+    D = rdp1.getgeombyindx(geofil,xs,xe,ys,ye)[0]
+    nt = dimu[0].size
+    t0 = time.time()
     
-    time = rdp1.getdims(fil)[3]
-    nt = time.size
-
     if loop:
         print('Reading data using loop...')
-        dimu,um = rdp1.getvar('u',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                zs=zs,ze=ze,xhxq='xq',ts=0,te=1)
-        dimv,vm = rdp1.getvar('v',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                zs=zs,ze=ze,yhyq='yq',ts=0,te=1)
-        dime,em = rdp1.getvar('e',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                zs=zs,ze=ze,ts=0,te=1)
+        u = fh.variables['u'][0:1,zs:ze,ys:ye,uxs:uxe]
+        v = fh.variables['v'][0:1,zs:ze,vys:vye,xs:xe]
+        e = fh.variables['e'][0:1,zs:ze,ys:ye,xs:xe]
+
         if twa:
             print('Using twa..')
-            dimhu,frhatu=rdp1.getvar('frhatu',fil,wlon=xstart,elon=xend,
-                    slat=ystart,nlat=yend,xhxq='xq',zs=zs,ze=ze,ts=0,te=1)
-            dimhv,frhatv=rdp1.getvar('frhatv',fil,wlon=xstart,elon=xend,
-                    slat=ystart,nlat=yend,yhyq='yq', zs=zs,ze=ze,ts=0,te=1)
+            frhatu = fh.variables['frhatu'][0:1,zs:ze,ys:ye,uxs:uxe]
+            frhatv = fh.variables['frhatv'][0:1,zs:ze,vys:vye,xs:xe]
             hm_u = frhatu*D[np.newaxis,np.newaxis,:,:]
             hm_v = frhatv*D[np.newaxis,np.newaxis,:,:]
-            hm_u = np.ma.masked_array(hm_u,mask=(hm_u<=1e0).astype(int))
-            hm_v = np.ma.masked_array(hm_v,mask=(hm_v<=1e0).astype(int))
-            uhm = um*hm_u/nt
-            vhm = vm*hm_v/nt
-            hm_u /= nt
-            hm_v /= nt
+            hm_u = np.ma.masked_array(hm_u,mask=(hm_u<=1e-3).astype(int))
+            hm_v = np.ma.masked_array(hm_v,mask=(hm_v<=1e-3).astype(int))
+            uhm = u*hm_u.filled(0)
+            vhm = v*hm_v.filled(0)
+            swashu = np.ma.array(np.ones(hm_u.shape),mask=np.ma.getmaskarray(hm_u))
+            swashv = np.ma.array(np.ones(hm_v.shape),mask=np.ma.getmaskarray(hm_v))
         else:
-            um /= nt
-            vm /= nt
+            um = u/nt
+            vm = v/nt
 
-        em /= nt
+        em = e/nt
 
         for i in range(1,nt):
-            u = rdp1.getvar('u',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                    zs=zs,ze=ze,xhxq='xq',ts=i,te=i+1)[1]
-            v = rdp1.getvar('v',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                    zs=zs,ze=ze,yhyq='yq',ts=i,te=i+1)[1]
-            e = rdp1.getvar('e',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                    zs=zs,ze=ze,ts=i,te=i+1)[1]
+            u = fh.variables['u'][i:i+1,zs:ze,ys:ye,uxs:uxe]
+            v = fh.variables['v'][i:i+1,zs:ze,vys:vye,xs:xe]
+            e = fh.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]
             if twa:
-                frhatu=rdp1.getvar('frhatu',fil,wlon=xstart,elon=xend,
-                        slat=ystart,nlat=yend, zs=zs,ze=ze,xhxq='xq',ts=i,te=i+1)[1]
-                frhatv=rdp1.getvar('frhatv',fil,wlon=xstart,elon=xend,
-                        slat=ystart,nlat=yend, zs=zs,ze=ze,yhyq='yq',ts=i,te=i+1)[1]
+                frhatu = fh.variables['frhatu'][i:i+1,zs:ze,ys:ye,uxs:uxe]
+                frhatv = fh.variables['frhatv'][i:i+1,zs:ze,vys:vye,xs:xe]
                 h_u = frhatu*D[np.newaxis,np.newaxis,:,:]
                 h_v = frhatv*D[np.newaxis,np.newaxis,:,:]
-                h_u = np.ma.masked_array(h_u,mask=(h_u<=1e0).astype(int))
-                h_v = np.ma.masked_array(h_v,mask=(h_v<=1e0).astype(int))
-                uh = u*h_u
-                vh = v*h_v
-                uhm += uh/nt
-                vhm += vh/nt
-                hm_u += h_u/nt
-                hm_v += h_v/nt
+                h_u = np.ma.masked_array(h_u,mask=(h_u<=1e-3).astype(int))
+                h_v = np.ma.masked_array(h_v,mask=(h_v<=1e-3).astype(int))
+                uhm += u*h_u.filled(0)
+                vhm += v*h_v.filled(0)
+                hm_u += h_u.filled(0)
+                hm_v += h_v.filled(0)
+                swashu += np.ma.array(np.ones(hm_u.shape),mask=np.ma.getmaskarray(hm_u))
+                swashv += np.ma.array(np.ones(hm_v.shape),mask=np.ma.getmaskarray(hm_v))
             else:
                 um += u/nt
                 vm += v/nt
@@ -77,6 +73,8 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             sys.stdout.write('\r'+str(int((i+1)/nt*100))+'% done...')
             sys.stdout.flush()
             
+        fh.close()
+        print('Time taken for data reading: {}s'.format(time.time()-t0))
 
         if twa:
             hm_u = np.ma.apply_over_axes(np.mean, hm_u, meanax[0])
@@ -88,58 +86,28 @@ def extractvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
 
         um = np.ma.apply_over_axes(np.mean, um, meanax)
         vm = np.ma.apply_over_axes(np.mean, vm, meanax)
+        swashu = np.ma.apply_over_axes(np.mean, swashu, meanax)
+        swashv = np.ma.apply_over_axes(np.mean, swashv, meanax)
+        elm = 0.5*(em[:,0:-1,:,:]+em[:,1:,:,:])
+        elm = np.ma.apply_over_axes(np.mean, elm, meanax)
         em = np.ma.apply_over_axes(np.mean, em, meanax)
         
-    else:
-        print('Reading data...')
-        dimu,u = rdp1.getvar('u',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                zs=zs,ze=ze,xhxq='xq')
-        dimv,v = rdp1.getvar('v',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                zs=zs,ze=ze,yhyq='yq')
-        dime,e = rdp1.getvar('e',fil,wlon=xstart,elon=xend,slat=ystart,nlat=yend,
-                zs=zs,ze=ze)
-        print('Done!')
-
-
-        if twa:
-            print('Using twa..')
-            dimhu,frhatu=rdp1.getvar('frhatu',fil,wlon=xstart,elon=xend,
-                    slat=ystart,nlat=yend, zs=zs,ze=ze)
-            dimhv,frhatv=rdp1.getvar('frhatv',fil,wlon=xstart,elon=xend,
-                    slat=ystart,nlat=yend, zs=zs,ze=ze)
-            h_u = frhatu*D[np.newaxis,np.newaxis,:,:]
-            h_v = frhatv*D[np.newaxis,np.newaxis,:,:]
-            h_u = np.ma.masked_array(h_u,mask=(h_u<=1e0).astype(int))
-            h_v = np.ma.masked_array(h_v,mask=(h_v<=1e0).astype(int))
-            uh = u*h_u
-            vh = v*h_v
-            um = np.ma.apply_over_axes(np.mean, uh, meanax[0])
-            vm = np.ma.apply_over_axes(np.mean, vh, meanax[0])
-            hm_u = np.ma.apply_over_axes(np.mean, h_u, meanax[0])
-            hm_v = np.ma.apply_over_axes(np.mean, h_v, meanax[0])
-            um /= hm_u
-            vm /= hm_v
-
-        um = np.ma.apply_over_axes(np.mean, u, meanax)
-        vm = np.ma.apply_over_axes(np.mean, v, meanax)
-        em = np.ma.apply_over_axes(np.mean, e, meanax)
-
     Xu = dimu[keepax[1]]
     Xv = dimv[keepax[1]]
     Yu = dimu[keepax[0]]
     Yv = dimv[keepax[0]]
     if 1 in keepax:
-        z = np.linspace(-np.max(D),-1,num=50)
-        um = getvaratz(um,z,em)
-        vm = getvaratz(vm,z,em)
-        Yu = z
-        Yv = z
+        Yu = elm.squeeze()
+        Xu = np.meshgrid(Xu,dimu[1])[0]
+        Yv = elm.squeeze()
+        Xv = np.meshgrid(Xv,dimv[1])[0]
 
     Pu = um.squeeze()
     Pv = vm.squeeze()
-    print(np.max(Pu),np.max(Pv))
-    datau = (Xu,Yu,Pu)
-    datav = (Xv,Yv,Pv)
+    swashu = swashu.squeeze().filled(0)
+    swashv = swashv.squeeze().filled(0)
+    datau = (Xu,Yu,Pu,swashu)
+    datav = (Xv,Yv,Pv,swashv)
     return datau, datav
 
 
@@ -150,9 +118,11 @@ def plotvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
     plt.figure()
     ax = plt.subplot(3,2,1)
     im = m6plot(datau,ax,xlab='x from EB (Deg)',ylab='z (m)')
+    im2 = plt.contour(datau[0],datau[1],datau[3],1,colors='k')
     
     ax = plt.subplot(3,2,2)
     im = m6plot(datav,ax,xlab='x from EB (Deg)',ylab='z (m)')
+    im2 = plt.contour(datav[0],datav[1],datav[3],1,colors='k')
     ax.set_yticklabels([])
     
     if savfil:

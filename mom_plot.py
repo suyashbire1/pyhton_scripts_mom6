@@ -7,7 +7,7 @@ def m6plot(data,ax=None,xticks=None,yticks=None,
         f = plt.figure()
         ax = f.gca()
     
-    X,Y,Z = data
+    X,Y,Z = data[0:3]
     if not Zmax:
         Zmax = np.nanmax(np.absolute(Z))
     Zctr = np.linspace(-Zmax,Zmax,num=12,endpoint=True)
@@ -21,7 +21,7 @@ def m6plot(data,ax=None,xticks=None,yticks=None,
     if yticks:
         ax.set_yticks(yticks)
     if xlab:
-        plt=xlabel(xlab)
+        plt.xlabel(xlab)
     if yticks:
         plt.ylabel(ylab)
 
