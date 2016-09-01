@@ -15,34 +15,33 @@ def extract_momx_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             if i not in meanax:
                 keepax += (i,)
 
-        D, (ah,aq) = rdp1.getgeom(geofil,wlon=xstart,
-                elon=xend,slat=ystart,nlat=yend)[0:2]
-        (uxs,uxe),(ys,ye),dimu = rdp1.getlatlonindx(fil,wlon=xstart,elon=xend,
+        fh = mfdset(fil)
+        (xs,xe),(ys,ye),dimu = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
                 slat=ystart, nlat=yend,zs=zs,ze=ze,xhxq='xq')
+        D, (ah,aq) = rdp1.getgeombyindx(geofil,xs,xe,ys,ye)[0:2]
         nt = dimu[0].size
         t0 = time.time()
-        fh = mfdset(fil)
 
         print('Reading data using loop...')
-        dudtm = fh.variables['dudt'][0:1,zs:ze,ys:ye,uxs:uxe]/nt
-        caum = fh.variables['CAu'][0:1,zs:ze,ys:ye,uxs:uxe]/nt
-        pfum = fh.variables['PFu'][0:1,zs:ze,ys:ye,uxs:uxe]/nt
-        dudtviscm = fh.variables['du_dt_visc'][0:1,zs:ze,ys:ye,uxs:uxe]/nt
-        diffum = fh.variables['diffu'][0:1,zs:ze,ys:ye,uxs:uxe]/nt
-        dudtdiam = fh.variables['dudt_dia'][0:1,zs:ze,ys:ye,uxs:uxe]/nt
+        dudtm = fh.variables['dudt'][0:1,zs:ze,ys:ye,xs:xe]/nt
+        caum = fh.variables['CAu'][0:1,zs:ze,ys:ye,xs:xe]/nt
+        pfum = fh.variables['PFu'][0:1,zs:ze,ys:ye,xs:xe]/nt
+        dudtviscm = fh.variables['du_dt_visc'][0:1,zs:ze,ys:ye,xs:xe]/nt
+        diffum = fh.variables['diffu'][0:1,zs:ze,ys:ye,xs:xe]/nt
+        dudtdiam = fh.variables['dudt_dia'][0:1,zs:ze,ys:ye,xs:xe]/nt
         if 1 in keepax:
-            em = fh.variables['e'][0:1,zs:ze,ys:ye,uxs:uxe]/nt
+            em = fh.variables['e'][0:1,zs:ze,ys:ye,xs:xe]/nt
             print(caum.shape,em.shape)
 
         for i in range(1,nt):
-            dudtm += fh.variables['dudt'][i:i+1,zs:ze,ys:ye,uxs:uxe]/nt
-            caum += fh.variables['CAu'][i:i+1,zs:ze,ys:ye,uxs:uxe]/nt
-            pfum += fh.variables['PFu'][i:i+1,zs:ze,ys:ye,uxs:uxe]/nt
-            dudtviscm += fh.variables['du_dt_visc'][i:i+1,zs:ze,ys:ye,uxs:uxe]/nt
-            diffum += fh.variables['diffu'][i:i+1,zs:ze,ys:ye,uxs:uxe]/nt
-            dudtdiam += fh.variables['dudt_dia'][i:i+1,zs:ze,ys:ye,uxs:uxe]/nt
+            dudtm += fh.variables['dudt'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
+            caum += fh.variables['CAu'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
+            pfum += fh.variables['PFu'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
+            dudtviscm += fh.variables['du_dt_visc'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
+            diffum += fh.variables['diffu'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
+            dudtdiam += fh.variables['dudt_dia'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
             if 1 in keepax:
-                em += fh.variables['e'][i:i+1,zs:ze,ys:ye,uxs:uxe]/nt
+                em += fh.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
 
             sys.stdout.write('\r'+str(int((i+1)/nt*100))+'% done...')
             sys.stdout.flush()
@@ -104,6 +103,5 @@ def plot_momx(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
     else:
+        im = m6plot((X,Y,np.sum(P,axis=2)),Zmax=cmax)
         plt.show()
-
-    #im = m6plot((X,Y,np.sum(P,axis=2)),Zmax=cmax)
