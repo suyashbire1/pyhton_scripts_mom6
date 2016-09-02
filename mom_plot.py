@@ -1,5 +1,5 @@
 def m6plot(data,ax=None,xticks=None,yticks=None,
-        xlab=None,ylab=None,savfil=None,Zmax=None):
+        xlab=None,ylab=None,savfil=None,Zmax=None,titl=None):
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -21,9 +21,11 @@ def m6plot(data,ax=None,xticks=None,yticks=None,
     if yticks:
         ax.set_yticks(yticks)
     if xlab:
-        plt.xlabel(xlab)
+        ax.set_xlabel(xlab)
     if yticks:
-        plt.ylabel(ylab)
+        ax.set_ylabel(ylab)
+    if titl:
+        ax.set_title(titl)
 
     if savfil:
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
