@@ -104,9 +104,9 @@ def plot_cb(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         ax = plt.subplot(3,2,i+1)
         im = m6plot((X,Y,P[:,:,i]),ax,Zmax=cmax,titl=ti[i])
         if i % 2:
-            plt.ylabel('z (m)')
-        else:
             ax.set_yticklabels([])
+        else:
+            plt.ylabel('z (m)')
 
         if i > 1:
             plt.xlabel('x from EB (Deg)')
