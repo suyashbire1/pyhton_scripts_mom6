@@ -83,7 +83,7 @@ def extract_momy_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
 def plot_momy(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         savfil=None,alreadysaved=False):
     X,Y,P = extract_momy_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
-            lreadysaved)
+            alreadysaved)
     cmax = np.nanmax(np.absolute(P))
     plt.figure()
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)']
