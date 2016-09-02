@@ -83,22 +83,23 @@ def extract_momy_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
 def plot_momy(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         savfil=None,alreadysaved=False):
     X,Y,P = extract_momy_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
-            alreadysaved)
+            lreadysaved)
     cmax = np.nanmax(np.absolute(P))
     plt.figure()
-    ax = plt.subplot(3,2,1)
-    im = m6plot((X,Y,P[:,:,0]),ax,Zmax=cmax)
-    ax = plt.subplot(3,2,2)
-    im = m6plot((X,Y,P[:,:,1]),ax,Zmax=cmax)
-    ax = plt.subplot(3,2,3)
-    im = m6plot((X,Y,P[:,:,2]),ax,Zmax=cmax)
-    ax = plt.subplot(3,2,4)
-    im = m6plot((X,Y,P[:,:,3]),ax,Zmax=cmax)
-    ax = plt.subplot(3,2,5)
-    im = m6plot((X,Y,P[:,:,4]),ax,Zmax=cmax)
-    ax = plt.subplot(3,2,6)
-    im = m6plot((X,Y,P[:,:,5]),ax,Zmax=cmax)
+    ti = ['(a)','(b)','(c)','(d)','(e)','(f)']
+    for i in range(P.shape[-1]):
+        ax = plt.subplot(3,2,i+1)
+        im = m6plot((X,Y,P[:,:,i]),ax,Zmax=cmax,titl=ti[i])
+        if i % 2:
+            ax.set_yticklabels([])
+        else:
+            plt.ylabel('z (m)')
 
+        if i > 3:
+            plt.xlabel('x from EB (Deg)')
+        else:
+            ax.set_xticklabels([])
+    
     if savfil:
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')

@@ -99,7 +99,7 @@ def plot_cb(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             loop,alreadysaved)
     cmax = np.nanmax(np.absolute(P))
     plt.figure()
-    ti = ['a','b','c','d']
+    ti = ['(a)','(b)','(c)','(d)']
     for i in range(P.shape[-1]):
         ax = plt.subplot(3,2,i+1)
         im = m6plot((X,Y,P[:,:,i]),ax,Zmax=cmax,titl=ti[i])
