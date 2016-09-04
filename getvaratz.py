@@ -1,6 +1,5 @@
 import numpy as np
 def getvaratz(var,z,e):
-    print(var.shape,e.shape)
     e = np.swapaxes(e,0,1).reshape((e.shape[1],-1))
     var1 = np.swapaxes(var,0,1).reshape((var.shape[1],-1))
     varatz = np.ma.zeros((z.size,var1.shape[1]))
@@ -18,13 +17,13 @@ def getvaratz(var,z,e):
     return varatz
 
 def getTatz(zl,z,e):
-    e = np.swapaxes(e,0,1).reshape((e.shape[1],-1))
-    Tatz = np.zeros((z.size,e.shape[1]))
+    e1 = np.swapaxes(e,0,1).reshape((e.shape[1],-1))
+    Tatz = np.zeros((z.size,e1.shape[1]))
     Tatz[:] = np.NaN
 
     for i in range(z.size):
-        t1 = e[0:-1,:] - z[i]
-        t2 = e[1:,:] - z[i]
+        t1 = e1[0:-1,:] - z[i]
+        t2 = e1[1:,:] - z[i]
         tt = t1*t2
         indices = np.nonzero(tt<=0)
         Tatz[i,indices[1]] = zl[indices[0]]
