@@ -150,7 +150,7 @@ def extract_twamomx_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
     return (X,Y,P)
 
 def plot_twamomx(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
-        savfil=None,alreadysaved=False):
+        savfil1=None,savfil2=None,alreadysaved=False):
     X,Y,P = extract_twamomx_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             alreadysaved)
     cmax = np.nanmax(np.absolute(P))
@@ -169,9 +169,34 @@ def plot_twamomx(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         else:
             ax.set_xticklabels([])
     
-    if savfil:
-        plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
+    if savfil1:
+        plt.savefig(savfil1+'.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
     else:
         im = m6plot((X,Y,np.sum(P,axis=2)),Zmax=cmax)
+        plt.show()
+
+    P1 = np.concatenate((P[:,:,0:2],np.sum(P[:,:,2:4],axis=2,keepdims=True)
+        ,P[:,:,4:]),axis=2)
+    cmax = np.nanmax(np.absolute(P1))
+    plt.figure()
+    ti = ['(a)','(b)','(c)','(d)','(e)']
+    for i in range(P1.shape[-1]):
+        ax = plt.subplot(3,2,i+1)
+        im = m6plot((X,Y,P1[:,:,i]),ax,Zmax=cmax,titl=ti[i])
+        if i % 2:
+            ax.set_yticklabels([])
+        else:
+            plt.ylabel('z (m)')
+
+        if i > 3:
+            plt.xlabel('x from EB (Deg)')
+        else:
+            ax.set_xticklabels([])
+    
+    if savfil2:
+        plt.savefig(savfil2+'.eps', dpi=300, facecolor='w', edgecolor='w', 
+                    format='eps', transparent=False, bbox_inches='tight')
+    else:
+        im = m6plot((X,Y,np.sum(P1,axis=2)),Zmax=cmax)
         plt.show()
