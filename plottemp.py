@@ -32,16 +32,16 @@ def extractT(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,ts=0,te=None,
         print('Time taken for data reading: {}s'.format(time.time()-t0))
     else:
         e = fh.variables['e'][ts:te,zs:ze,ys:ye,xs:xe]
-    if z == None:
-        z = np.linspace(-np.nanmax(D),-1,num=50)
-    T = getTatz(zl,z,e)
-    T = (T - rho0)/drhodt
-    T = np.ma.apply_over_axes(np.nanmean, T, meanax)
 
     X = dimh[keepax[1]]
     Y = dimh[keepax[0]]
     if 1 in keepax:
         Y = z 
+        if z == None:
+            z = np.linspace(-np.nanmax(D),-1,num=50)
+    T = getTatz(zl,z,e)
+    T = (T - rho0)/drhodt
+    T = np.ma.apply_over_axes(np.nanmean, T, meanax)
 
     P = T.squeeze()
     data = (X,Y,P)
