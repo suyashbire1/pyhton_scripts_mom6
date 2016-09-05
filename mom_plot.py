@@ -11,6 +11,8 @@ def m6plot(data,ax=None,xticks=None,yticks=None,
     X,Y,Z = data[0:3]
     if Zmax != None and Zmin != None:
         Zctr = np.linspace(Zmin,Zmax,num=26,endpoint=True)
+    elif Zmax != None:
+        Zctr = np.linspace(-Zmax,Zmax,num=12,endpoint=True)
     else:
         Zmax = np.nanmax(np.absolute(Z))
         Zctr = np.linspace(-Zmax,Zmax,num=12,endpoint=True)
