@@ -7,7 +7,7 @@ from netCDF4 import MFDataset as mfdset
 import time
 
 def extractT(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,ts=0,te=None,
-        z=None,drhodt=-0.2,rho0=1031.0,savfil=None,plotit=True):
+        z=None,drhodt=-0.2,rho0=1031.0,savfil=None,plotit=True,loop=True):
 
     keepax = ()
     for i in range(4):
@@ -22,7 +22,16 @@ def extractT(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,ts=0,te=None,
     t0 = time.time()
 
     zl = rdp1.getdims(fh)[2][1]
-    e = fh.variables['e'][ts:te,zs:ze,ys:ye,xs:xe]
+    if loop:
+        print('Reading data in loop...')
+        e = fh.variables['e'][0:1,zs:ze,ys:ye,xs:xe]/nt
+        for i in range(nt):
+            e += fh.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
+            sys.stdout.write('\r'+str(int((i+1)/nt*100))+'% done...')
+            sys.stdout.flush()
+        print('Time taken for data reading: {}s'.format(time.time()-t0))
+    else:
+        e = fh.variables['e'][ts:te,zs:ze,ys:ye,xs:xe]
     if z == None:
         z = np.linspace(-np.nanmax(D),-1,num=50)
     T = getTatz(zl,z,e)
