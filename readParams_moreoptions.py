@@ -77,13 +77,35 @@ def getdims(fh):
     | (xh,yh), (xq,yq), (zi,zl), time = getdims(filename)
     | This function returns all the dimensions from any MOM6 output file.
     """
-    xq = fh.variables['xq'][:]
-    yq = fh.variables['yq'][:]
-    time = fh.variables['Time'][:]
-    xh = fh.variables['xh'][:]
-    yh = fh.variables['yh'][:]
-    zi = fh.variables['zi'][:]
-    zl = fh.variables['zl'][:]
+    try:
+        xq = fh.variables['xq'][:]
+    except KeyError:
+        xq = None
+    try:
+        yq = fh.variables['yq'][:]
+    except KeyError:
+        yq = None
+    try:
+        time = fh.variables['Time'][:]
+    except KeyError:
+        time = None
+    try:
+        xh = fh.variables['xh'][:]
+    except KeyError:
+        xh = None
+    try:
+        yh = fh.variables['yh'][:]
+    except KeyError:
+        yh = None
+    try:
+        zi = fh.variables['zi'][:]
+    except KeyError:
+        zi = None
+    try:
+        zl = fh.variables['zl'][:]
+    except KeyError:
+        zl = None
+
     return (xh,yh), (xq,yq), (zi,zl), time
 
 def getvar(var,fh,filename,wlon=-25,elon=0,slat=10,nlat=60,
