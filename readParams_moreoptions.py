@@ -148,3 +148,15 @@ def getlatlonindx(fh,wlon=-25,elon=0,slat=10,nlat=60,
     rx = x[xs:xe]
     ry = y[ys:ye]
     return (xs,xe),(ys,ye),(rt,rz,ry,rx)
+
+def getdimsbyindx(fh,xs,xe,ys,ye,
+        zs=0,ze=None,ts=0,te=None,xhxq='xh',yhyq='yh',zlzi='zl'):
+    (xh,yh), (xq,yq), (zi,zl), time = getdims(fh)
+    x = eval(xhxq)
+    y = eval(yhyq)
+    z = eval(zlzi)
+    rz = z[zs:ze]
+    rt = time[ts:te]
+    rx = x[xs:xe]
+    ry = y[ys:ye]
+    return (xs,xe),(ys,ye),(rt,rz,ry,rx)
