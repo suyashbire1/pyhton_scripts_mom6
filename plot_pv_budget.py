@@ -183,7 +183,6 @@ def extract_pvterms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             fdiapycm[:,:,:,:,np.newaxis],
             uhxm[:,:,:,:,np.newaxis],
             vhym[:,:,:,:,np.newaxis]),axis=4)
-        print(terms.shape)
 
         termsm = np.ma.apply_over_axes(np.nanmean, terms, meanax)
 
@@ -213,7 +212,6 @@ def plot_pv(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         savfil=None,alreadysaved=False):
     X,Y,P = extract_pvterms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             alreadysaved)
-    print(X.shape,Y.shape,P.shape)
     cmax = np.nanmax(np.absolute(P))
     plt.figure()
     ti = ['(a)','(b)','(c)','(d)','(e)']
@@ -231,7 +229,7 @@ def plot_pv(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             ax.set_xticklabels([])
     
     if savfil:
-        plt.savefig(savfil1+'.eps', dpi=300, facecolor='w', edgecolor='w', 
+        plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
     else:
         im = m6plot((X,Y,np.sum(P,axis=2)),Zmax=cmax)
