@@ -90,13 +90,13 @@ def extract_pvterms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
 
         uh = np.ma.filled(uh.astype(float), 0)
         uh_x = np.diff(uh,axis=3)/ah
-        uhxm = f_q*(uh_x - h*ux)/nt
+        uhxm = f_q[np.newaxis,np.newaxis,:,np.newaxis]*(uh_x - h*ux)/nt
 
         vh = np.ma.filled(vh.astype(float), 0)
         vh_y = np.diff(vh,axis=2)/ah
-        vhym = f_q*(vh_y - h*vy)/nt
+        vhym = f_q[np.newaxis,np.newaxis,:,np.newaxis]*(vh_y - h*vy)/nt
 
-        fdiapycm = f_q*np.diff(wd,axis=1)
+        fdiapycm = f_q[np.newaxis,np.newaxis,:,np.newaxis]*np.diff(wd,axis=1)
 
         if 1 in keepax:
             em = fh.variables['e'][0:1,zs:ze,ys:ye,xs:xe]/nt
@@ -161,13 +161,13 @@ def extract_pvterms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
 
             uh = np.ma.filled(uh.astype(float), 0)
             uh_x = np.diff(uh,axis=3)/ah
-            uhxm += (uh_x - h*ux)/nt
+            uhxm += f_q[np.newaxis,np.newaxis,:,np.newaxis]*(uh_x - h*ux)/nt
 
             vh = np.ma.filled(vh.astype(float), 0)
             vh_y = np.diff(vh,axis=2)/ah
-            vhym += (vh_y - h*vy)/nt
+            vhym += f_q[np.newaxis,np.newaxis,:,np.newaxis]*(vh_y - h*vy)/nt
 
-            fdiapycm += f_q*np.diff(wd,axis=1)
+            fdiapycm += f_q[np.newaxis,np.newaxis,:,np.newaxis]*np.diff(wd,axis=1)
 
             if 1 in keepax:
                 em += fh.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
