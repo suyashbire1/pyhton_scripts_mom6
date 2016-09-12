@@ -96,7 +96,7 @@ def extract_pvterms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         vh_y = np.diff(vh,axis=2)/ah
         vhym = f_q[np.newaxis,np.newaxis,:,np.newaxis]*(vh_y - h*vy)/nt
 
-        fdiapycm = f_q[np.newaxis,np.newaxis,:,np.newaxis]*np.diff(wd,axis=1)
+        fdiapycm = f_q[np.newaxis,np.newaxis,:,np.newaxis]*np.diff(wd,axis=1)/nt
 
         if 1 in keepax:
             em = fh.variables['e'][0:1,zs:ze,ys:ye,xs:xe]/nt
@@ -167,7 +167,7 @@ def extract_pvterms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             vh_y = np.diff(vh,axis=2)/ah
             vhym += f_q[np.newaxis,np.newaxis,:,np.newaxis]*(vh_y - h*vy)/nt
 
-            fdiapycm += f_q[np.newaxis,np.newaxis,:,np.newaxis]*np.diff(wd,axis=1)
+            fdiapycm += f_q[np.newaxis,np.newaxis,:,np.newaxis]*np.diff(wd,axis=1)/nt
 
             if 1 in keepax:
                 em += fh.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
@@ -178,7 +178,9 @@ def extract_pvterms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         fh.close()
         print('Time taken for reading: {}'.format(time.time()-t0))
 
-        terms = np.ma.concatenate((Y1xm[:,:,:,:,np.newaxis],
+        terms = np.ma.concatenate((uadvym[:,:,:,:,np.newaxis],
+            vadvxm[:,:,:,:,np.newaxis],
+            Y1xm[:,:,:,:,np.newaxis],
             Y2xm[:,:,:,:,np.newaxis],
             fdiapycm[:,:,:,:,np.newaxis],
             uhxm[:,:,:,:,np.newaxis],
@@ -214,16 +216,16 @@ def plot_pv(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             alreadysaved)
     cmax = np.nanmax(np.absolute(P))
     plt.figure()
-    ti = ['(a)','(b)','(c)','(d)','(e)']
+    ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)']
     for i in range(P.shape[-1]):
-        ax = plt.subplot(3,2,i+1)
+        ax = plt.subplot(4,2,i+1)
         im = m6plot((X,Y,P[:,:,i]),ax,Zmax=cmax,titl=ti[i])
         if i % 2:
             ax.set_yticklabels([])
         else:
             plt.ylabel('z (m)')
 
-        if i > 3:
+        if i > 5:
             plt.xlabel('x from EB (Deg)')
         else:
             ax.set_xticklabels([])
