@@ -33,16 +33,14 @@ def extract_twamomx_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         h_u = frhatu*D[np.newaxis,np.newaxis,:,:]
         h_u = np.ma.masked_array(h_u,mask=(h_u<=1e-3).astype(int))
         nt[h_u<=1e-3] -= 1
-        hu = h_u*u
-        h_um = h_u
 
         cau = fh.variables['CAu'][0:1,zs:ze,ys:ye,xs:xe]
         gkeu = fh.variables['gKEu'][0:1,zs:ze,ys:ye,xs:xe]
         rvxv = fh.variables['rvxv'][0:1,zs:ze,ys:ye,xs:xe]
         pfu = fh.variables['PFu'][0:1,zs:ze,ys:ye,xs:xe]
-        hfvm = h_u*(cau - gkeu - rvxv + pfu)
-        hagum = np.ma.masked_array(hfvm,mask=(h_u<=1e-3).astype(int))
-        hagum = hfvm.filled(0)
+        hagum = h_u*(cau - gkeu - rvxv + pfu)
+        hagum = np.ma.masked_array(hagum,mask=(h_u<=1e-3).astype(int))
+        hagum = hagum.filled(0)
         
         hdudtviscm = h_u*fh.variables['du_dt_visc'][0:1,zs:ze,ys:ye,xs:xe]
         hdudtviscm = np.ma.masked_array(hdudtviscm,mask=(h_u<=1e-3).astype(int))
