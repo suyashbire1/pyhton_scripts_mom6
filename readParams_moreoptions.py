@@ -46,7 +46,7 @@ def getgeom(filename,wlon=-25,elon=0,slat=10,nlat=60,
     fhgeo.close()
     return D, (ah,aq), (dxcu,dycu,dxcv,dycv,dxbu,dybu,dxt,dyt), f
 
-def getgeombyindx(filename,xs,xe,ys,ye):
+def getgeombyindx(fhgeo,xs,xe,ys,ye):
     """
     Usage: 
     | D, (ah,aq), (dxcu,dycu,dxcv,dycv,dxbu,dybu,dxt,dyt), f = getgeom(filename)
@@ -55,7 +55,6 @@ def getgeombyindx(filename,xs,xe,ys,ye):
     | grid spacing at Cu, Cv, Bu and T points,
     | and f at Bu points.
     """
-    fhgeo = dset(filename, mode='r')
     D = fhgeo.variables['D'][ys:ye,xs:xe]
     ah = fhgeo.variables['Ah'][ys:ye,xs:xe]
     aq = fhgeo.variables['Aq'][ys:ye,xs:xe]
@@ -68,7 +67,6 @@ def getgeombyindx(filename,xs,xe,ys,ye):
     dxt = fhgeo.variables['dxT'][ys:ye,xs:xe]
     dyt = fhgeo.variables['dyT'][ys:ye,xs:xe]
     f = fhgeo.variables['f'][ys:ye,xs:xe]
-    fhgeo.close()
     return D, (ah,aq), (dxcu,dycu,dxcv,dycv,dxbu,dybu,dxt,dyt), f
 
 def getdims(fh):
