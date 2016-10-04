@@ -164,6 +164,9 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
             if 1 in keepax:
                 em += fh.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]/nt_const
 
+            sys.stdout.write('\r'+str(int((i+1)/nt_const*100))+'% done...')
+            sys.stdout.flush()
+
 
         fhgeo.close()
         print('Time taken for data reading: {}s'.format(time.time()-t0))
@@ -200,6 +203,8 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
 
         hwb_v = 0.5*(wdm[:,:,0:-1,:] + wdm[:,:,1:,:])
 
+        print('Calculating form drag using loop...')
+        t0 = time.time()
         e = fh.variables['e'][0:1,zs:ze,ys:ye+1,xs:xe]
         el = 0.5*(e[:,0:-1,:,:] + e[:,1:,:,:])
         ed = e - emforydiff
@@ -226,6 +231,10 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
             ed = 0.5*(ed[:,:,0:-1,:] + ed[:,:,1:,:]) 
             edpfvdm += ed*pfvd/nt_const
 
+            sys.stdout.write('\r'+str(int((i+1)/nt_const*100))+'% done...')
+            sys.stdout.flush()
+
+        print('Time taken for data reading: {}s'.format(time.time()-t0))
         fh.close()
             
         edlsqmy = np.diff(edlsqm,axis=2)/dycv
