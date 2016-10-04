@@ -96,12 +96,12 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
             em = fh.variables['e'][0:1,zs:ze,ys:ye,xs:xe]/nt_const
 
         for i in range(1,nt_const):
-            u = fh.variables['u'][i:i+1,zs:ze,ys:ye,xs:xe]
+            v = fh.variables['v'][i:i+1,zs:ze,ys:ye,xs:xe]
             frhatv = fh.variables['frhatv'][i:i+1,zs:ze,ys:ye,xs:xe]
             h_v = frhatv*D[np.newaxis,np.newaxis,:,:]
             h_v = np.ma.masked_array(h_v,mask=(h_v<=1e-3).astype(int))
             nt[h_v<=1e-3] -= 1
-            hvm += (h_v*u).filled(0)
+            hvm += (h_v*v).filled(0)
             h_vm += h_v.filled(0)
 
             hvforxdiff, h_vforxdiff = getvtwaforxdiff(fh,fhgeo,Dforgetvtwaforxdiff,i,xs-1,xe,ys,ye,zs,ze)
@@ -113,10 +113,10 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
             hvmforydiff += hvforydiff
             h_vmforydiff += h_vforydiff
 
-            cau = fh.variables['CAu'][i:i+1,zs:ze,ys:ye,xs:xe]
-            gkeu = fh.variables['gKEu'][i:i+1,zs:ze,ys:ye,xs:xe]
-            rvxv = fh.variables['rvxv'][i:i+1,zs:ze,ys:ye,xs:xe]
-            hmfu = h_v*(cau - gkeu - rvxv)
+            cav = fh.variables['CAv'][i:i+1,zs:ze,ys:ye,xs:xe]
+            gkev = fh.variables['gKEv'][i:i+1,zs:ze,ys:ye,xs:xe]
+            rvxu = fh.variables['rvxu'][i:i+1,zs:ze,ys:ye,xs:xe]
+            hmfu = h_v*(cav - gkev - rvxu)
             hmfum += hmfu.filled(0)
             
             pfv = fh.variables['PFv'][i:i+1,zs:ze,ys:ye,xs:xe]
