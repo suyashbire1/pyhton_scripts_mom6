@@ -350,10 +350,10 @@ def gethvforydiff(fh,fhgeo,D,i,xs,xe,ys,ye,zs,ze):
     return (h_v*v).filled(0)
 
 def plot_twamomx(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
-        savfil=None,savfilep=None,alreadysaved=False):
+        cmaxscalefactor = 1, savfil=None,savfilep=None,alreadysaved=False):
     X,Y,P,Pep = extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             alreadysaved)
-    cmax = np.nanmax(np.absolute(P))
+    cmax = np.nanmax(np.absolute(P))*cmaxscalefactor
     plt.figure()
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
     for i in range(P.shape[-1]):
@@ -376,7 +376,7 @@ def plot_twamomx(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         im = m6plot((X,Y,np.sum(P,axis=2)),Zmax=cmax)
         plt.show()
 
-    cmax = np.nanmax(np.absolute(Pep))
+    cmax = np.nanmax(np.absolute(Pep))*cmaxscalefactor
     plt.figure()
     for i in range(Pep.shape[-1]):
         ax = plt.subplot(4,2,i+1)
