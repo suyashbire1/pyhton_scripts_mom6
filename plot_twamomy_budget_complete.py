@@ -209,27 +209,27 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         el = 0.5*(e[:,0:-1,:,:] + e[:,1:,:,:])
         ed = e - emforydiff
         edl = el - elmforydiff
-        edlsqm = (edl**2)/nt_const
+        edlsqm = (edl**2)
         pfv = fh.variables['PFv'][0:1,zs:ze,ys:ye,xs:xe]
         pfvd = pfv - pfvm/nt
         pfvd = np.concatenate((np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]]),
             pfvd,np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]])),axis=1)
         pfvd = 0.5*(pfvd[:,0:-1,:,:] + pfvd[:,1:,:,:])
         ed = 0.5*(ed[:,:,0:-1,:] + ed[:,:,1:,:]) 
-        edpfvdm = ed*pfvd/nt_const
+        edpfvdm = ed*pfvd
         for i in range(1,nt_const):
             e = fh.variables['e'][i:i+1,zs:ze,ys:ye+1,xs:xe]
             el = 0.5*(e[:,0:-1,:,:] + e[:,1:,:,:])
             ed = e - emforydiff
             edl = el - elmforydiff
-            edlsqm += (edl**2)/nt_const
+            edlsqm += (edl**2)
             pfv = fh.variables['PFv'][i:i+1,zs:ze,ys:ye,xs:xe]
             pfvd = pfv - pfvm/nt
             pfvd = np.concatenate((np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]]),
                 pfvd,np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]])),axis=1)
             pfvd = 0.5*(pfvd[:,0:-1,:,:] + pfvd[:,1:,:,:])
             ed = 0.5*(ed[:,:,0:-1,:] + ed[:,:,1:,:]) 
-            edpfvdm += ed*pfvd/nt_const
+            edpfvdm += ed*pfvd
 
             sys.stdout.write('\r'+str(int((i+1)/nt_const*100))+'% done...')
             sys.stdout.flush()
@@ -285,6 +285,8 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
                                         bdivep4[:,:,:,:,np.newaxis]),
                                         axis=4)
 
+        terms[np.isinf(terms)] = np.nan
+        termsep[np.isinf(termsep)] = np.nan
         termsm = np.ma.apply_over_axes(np.nanmean, terms, meanax)
         termsepm = np.ma.apply_over_axes(np.nanmean, termsep, meanax)
 

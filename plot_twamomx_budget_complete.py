@@ -223,7 +223,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         el = 0.5*(e[:,0:-1,:,:] + e[:,1:,:,:])
         ed = e - em
         edl = el - elm
-        edlsqm = (edl**2)/nt_const
+        edlsqm = (edl**2)
         pfu = fh.variables['PFu'][0:1,zs:ze,ys:ye,xs:xe]
         pfud = pfu - pfum/nt
         pfud = np.concatenate((np.zeros([pfud.shape[0],1,pfud.shape[2],pfud.shape[3]]),
@@ -231,13 +231,13 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         pfud = 0.5*(pfud[:,0:-1,:,:] + pfud[:,1:,:,:])
         ed = np.concatenate((ed,-ed[:,:,:,-1:]),axis=3)
         ed = 0.5*(ed[:,:,:,0:-1] + ed[:,:,:,1:]) 
-        edpfudm = ed*pfud/nt_const
+        edpfudm = ed*pfud
         for i in range(1,nt_const):
             e = fh.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]
             el = 0.5*(e[:,0:-1,:,:] + e[:,1:,:,:])
             ed = e - em
             edl = el - elm
-            edlsqm += (edl**2)/nt_const
+            edlsqm += (edl**2)
             pfu = fh.variables['PFu'][i:i+1,zs:ze,ys:ye,xs:xe]
             pfud = pfu - pfum/nt
             pfud = np.concatenate((np.zeros([pfud.shape[0],1,pfud.shape[2],pfud.shape[3]]),
@@ -245,7 +245,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
             pfud = 0.5*(pfud[:,0:-1,:,:] + pfud[:,1:,:,:])
             ed = np.concatenate((ed,-ed[:,:,:,-1:]),axis=3)
             ed = 0.5*(ed[:,:,:,0:-1] + ed[:,:,:,1:]) 
-            edpfudm += ed*pfud/nt_const
+            edpfudm += ed*pfud
 
             sys.stdout.write('\r'+str(int((i+1)/nt_const*100))+'% done...')
             sys.stdout.flush()
@@ -301,6 +301,8 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
                                         bdivep4[:,:,:,:,np.newaxis]),
                                         axis=4)
 
+        terms[np.isinf(terms)] = np.nan
+        termsep[np.isinf(termsep)] = np.nan
         termsm = np.ma.apply_over_axes(np.nanmean, terms, meanax)
         termsepm = np.ma.apply_over_axes(np.nanmean, termsep, meanax)
 
