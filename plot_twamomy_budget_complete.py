@@ -216,7 +216,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         edl = el - elmforydiff
         edlsqm = (edl**2)
         pfv = fh.variables['PFv'][0:1,zs:ze,ys:ye,xs:xe]
-        pfvd = pfv - pfvm/nt
+        pfvd = pfv - pfvm/nt_const
         pfvd = np.concatenate((np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]]),
             pfvd,np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]])),axis=1)
         pfvd = 0.5*(pfvd[:,0:-1,:,:] + pfvd[:,1:,:,:])
@@ -229,7 +229,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
             edl = el - elmforydiff
             edlsqm += (edl**2)
             pfv = fh.variables['PFv'][i:i+1,zs:ze,ys:ye,xs:xe]
-            pfvd = pfv - pfvm/nt
+            pfvd = pfv - pfvm/nt_const
             pfvd = np.concatenate((np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]]),
                 pfvd,np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]])),axis=1)
             pfvd = 0.5*(pfvd[:,0:-1,:,:] + pfvd[:,1:,:,:])
@@ -247,7 +247,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         advy = vtwa*vtway
         advb = hwm_v*vtwab/h_vm
         cor = hmfum/h_vm
-        pfvm = pfvm/nt
+        pfvm = pfvm/nt_const
 
         xdivep1 = huvxm/h_vm
         xdivep2 = -advx

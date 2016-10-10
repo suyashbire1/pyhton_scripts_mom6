@@ -230,7 +230,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         edl = el - elm
         edlsqm = (edl**2)
         pfu = fh.variables['PFu'][0:1,zs:ze,ys:ye,xs:xe]
-        pfud = pfu - pfum/nt
+        pfud = pfu - pfum/nt_const
         pfud = np.concatenate((np.zeros([pfud.shape[0],1,pfud.shape[2],pfud.shape[3]]),
             pfud,np.zeros([pfud.shape[0],1,pfud.shape[2],pfud.shape[3]])),axis=1)
         pfud = 0.5*(pfud[:,0:-1,:,:] + pfud[:,1:,:,:])
@@ -244,7 +244,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
             edl = el - elm
             edlsqm += (edl**2)
             pfu = fh.variables['PFu'][i:i+1,zs:ze,ys:ye,xs:xe]
-            pfud = pfu - pfum/nt
+            pfud = pfu - pfum/nt_const
             pfud = np.concatenate((np.zeros([pfud.shape[0],1,pfud.shape[2],pfud.shape[3]]),
                 pfud,np.zeros([pfud.shape[0],1,pfud.shape[2],pfud.shape[3]])),axis=1)
             pfud = 0.5*(pfud[:,0:-1,:,:] + pfud[:,1:,:,:])
@@ -264,7 +264,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         advy = hvm*utway/h_um
         advb = hwm_u*utwab/h_um
         cor = hfvm/h_um
-        pfum = pfum/nt
+        pfum = pfum/nt_const
 
         xdivep1 = huuxm/h_um
         xdivep2 = -advx
