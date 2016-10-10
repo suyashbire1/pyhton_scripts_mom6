@@ -7,7 +7,7 @@ from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
 
 def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
-      alreadysaved=False):
+      alreadysaved=False,xyasindices=False):
 
     if not alreadysaved:
         keepax = ()
@@ -24,8 +24,13 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         fh = mfdset(fil)
         zi = rdp1.getdims(fh)[2][0]
         dbl = -np.diff(zi)*9.8/1031
-        (xs,xe),(ys,ye),dimu = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
-                slat=ystart, nlat=yend,zs=zs,ze=ze,xhxq='xq')
+        if xyasindices:
+            (xs,xe),(ys,ye) = (xstart,xend),(ystart,yend)
+            _,_,dimu = rdp1.getdimsbyindx(fh,xs,xe,ys,ye,
+                    zs=zs,ze=ze,ts=0,te=None,xhxq='xq',yhyq='yh',zlzi='zl')
+        else:
+            (xs,xe),(ys,ye),dimu = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
+                    slat=ystart, nlat=yend,zs=zs,ze=ze,xhxq='xq')
         D, (ah,aq) = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[0:2]
         Dforgetutwaforxdiff = rdp1.getgeombyindx(fhgeo,xs-1,xe,ys,ye)[0]
         Dforgetutwaforydiff = rdp1.getgeombyindx(fhgeo,xs,xe,ys-1,ye+1)[0]
