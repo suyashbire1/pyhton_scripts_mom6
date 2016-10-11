@@ -7,7 +7,7 @@ from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
 
 def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
-      alreadysaved=False,xyasindices=False):
+      alreadysaved=False,xyasindices=False,calledfrompv=False):
 
     if not alreadysaved:
         keepax = ()
@@ -324,7 +324,8 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         Pep = np.ma.filled(Pep.astype(float), np.nan)
         X = np.ma.filled(X.astype(float), np.nan)
         Y = np.ma.filled(Y.astype(float), np.nan)
-        np.savez('twamomx_complete_terms', X=X,Y=Y,P=P,Pep=Pep)
+        if not calledfrompv: 
+            np.savez('twamomx_complete_terms', X=X,Y=Y,P=P,Pep=Pep)
     else:
         npzfile = np.load('twamomx_complete_terms.npz')
         X = npzfile['X']
@@ -356,7 +357,7 @@ def gethvforydiff(fh,fhgeo,D,i,xs,xe,ys,ye,zs,ze):
     return (h_v*v).filled(0)
 
 def plot_twamomx(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
-        cmaxscalefactor = 1, savfil=None,savfilep=None,alreadysaved=False):
+        cmaxscalefactor = 1,cmaxscalefactorforep=1, savfil=None,savfilep=None,alreadysaved=False):
     X,Y,P,Pep = extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             alreadysaved)
     cmax = np.nanmax(np.absolute(P))*cmaxscalefactor
@@ -382,7 +383,7 @@ def plot_twamomx(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         im = m6plot((X,Y,np.sum(P,axis=2)),Zmax=cmax)
         plt.show()
 
-    cmax = np.nanmax(np.absolute(Pep))*cmaxscalefactor
+    cmax = np.nanmax(np.absolute(Pep))*cmaxscalefactorforep
     plt.figure()
     for i in range(Pep.shape[-1]):
         ax = plt.subplot(4,2,i+1)
