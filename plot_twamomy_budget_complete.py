@@ -202,7 +202,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         hvvym = 0.5*(hvvym[:,:,0:-1,:] + hvvym[:,:,1:,:])
         huvxm = huvxphvvym - hvvym
 
-        vtwaforvdiff = np.concatenate((vtwa,np.zeros([vtwa.shape[0],1,vtwa.shape[2],vtwa.shape[3]])),axis=1)
+        vtwaforvdiff = np.concatenate((vtwa[:,[0],:,:],vtwa),axis=1)
         vtwab = np.diff(vtwaforvdiff,axis=1)/db[:,np.newaxis,np.newaxis]
         vtwab = np.concatenate((vtwab,np.zeros([vtwab.shape[0],1,vtwab.shape[2],vtwab.shape[3]])),axis=1)
         vtwab = 0.5*(vtwab[:,0:-1,:,:] + vtwab[:,1:,:,:])
@@ -218,8 +218,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         edlsqm = (edl**2)
         pfv = fh.variables['PFv'][0:1,zs:ze,ys:ye,xs:xe]
         pfvd = pfv - pfvm/nt_const
-        pfvd = np.concatenate((np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]]),
-            pfvd,np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]])),axis=1)
+        pfvd = np.concatenate((-pfvd[:,[0],:,:],pfvd,np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]])),axis=1)
         pfvd = 0.5*(pfvd[:,0:-1,:,:] + pfvd[:,1:,:,:])
         ed = 0.5*(ed[:,:,0:-1,:] + ed[:,:,1:,:]) 
         edpfvdm = ed*pfvd
@@ -231,8 +230,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
             edlsqm += (edl**2)
             pfv = fh.variables['PFv'][i:i+1,zs:ze,ys:ye,xs:xe]
             pfvd = pfv - pfvm/nt_const
-            pfvd = np.concatenate((np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]]),
-                pfvd,np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]])),axis=1)
+            pfvd = np.concatenate((-pfvd[:,[0],:,:],pfvd,np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]])),axis=1)
             pfvd = 0.5*(pfvd[:,0:-1,:,:] + pfvd[:,1:,:,:])
             ed = 0.5*(ed[:,:,0:-1,:] + ed[:,:,1:,:]) 
             edpfvdm += ed*pfvd
