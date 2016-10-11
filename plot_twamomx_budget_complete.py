@@ -61,8 +61,8 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         hfvm = h_u*(cau - gkeu - rvxv).filled(0)
         
         pfum = fh.variables['PFu'][0:1,zs:ze,ys:ye,xs:xe]
-        pfum = np.ma.masked_array(pfum,mask=(h_u<=1e-3).astype(int))
-        pfum = pfum.filled(0)
+#        pfum = np.ma.masked_array(pfum,mask=(h_u<=1e-3).astype(int))
+#        pfum = pfum.filled(0)
         
         hdudtviscm = (h_u*fh.variables['du_dt_visc'][0:1,zs:ze,ys:ye,xs:xe]).filled(0)
         hdiffum = (h_u*fh.variables['diffu'][0:1,zs:ze,ys:ye,xs:xe]).filled(0)
@@ -129,8 +129,9 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
             hfvm += hfv.filled(0)
             
             pfu = fh.variables['PFu'][i:i+1,zs:ze,ys:ye,xs:xe]
-            pfu = np.ma.masked_array(pfu,mask=(h_u<=1e-3).astype(int))
-            pfum += pfu.filled(0)
+#            pfu = np.ma.masked_array(pfu,mask=(h_u<=1e-3).astype(int))
+#            pfum += pfu.filled(0)
+            pfum += pfu
             
             hdudtvisc = h_u*fh.variables['du_dt_visc'][i:i+1,zs:ze,ys:ye,xs:xe]
             hdudtviscm += hdudtvisc.filled(0)

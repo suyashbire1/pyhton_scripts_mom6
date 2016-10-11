@@ -62,8 +62,8 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         hmfum = (h_v*(cav - gkev - rvxu)).filled(0)
         
         pfvm = fh.variables['PFv'][0:1,zs:ze,ys:ye,xs:xe]
-        pfvm = np.ma.masked_array(pfvm,mask=(h_v<=1e-3).astype(int))
-        pfvm = pfvm.filled(0)
+#        pfvm = np.ma.masked_array(pfvm,mask=(h_v<=1e-3).astype(int))
+#        pfvm = pfvm.filled(0)
         
         hdvdtviscm = (h_v*fh.variables['dv_dt_visc'][0:1,zs:ze,ys:ye,xs:xe]).filled(0)
         hdiffvm = (h_v*fh.variables['diffv'][0:1,zs:ze,ys:ye,xs:xe]).filled(0)
@@ -125,8 +125,9 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
             hmfum += hmfu.filled(0)
             
             pfv = fh.variables['PFv'][i:i+1,zs:ze,ys:ye,xs:xe]
-            pfv = np.ma.masked_array(pfv,mask=(h_v<=1e-3).astype(int))
-            pfvm += pfv.filled(0)
+#            pfv = np.ma.masked_array(pfv,mask=(h_v<=1e-3).astype(int))
+#            pfvm += pfv.filled(0)
+            pfvm += pfv
             
             hdvdtvisc = h_v*fh.variables['dv_dt_visc'][i:i+1,zs:ze,ys:ye,xs:xe]
             hdvdtviscm += hdvdtvisc.filled(0)
