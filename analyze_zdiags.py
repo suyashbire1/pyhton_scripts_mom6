@@ -3,6 +3,7 @@ import xarray as xr
 import numpy as np
 from matplotlib import animation, rc
 from IPython.display import HTML
+import sys
 
 
 def plottanimation(fil,levels=None,yinc=True,savfil=None,**iselargs):
@@ -12,7 +13,7 @@ def plottanimation(fil,levels=None,yinc=True,savfil=None,**iselargs):
     ani = animate(T.isel(**iselargs),levels=levels,yincrease=yinc)
 
     if savfil:
-        ani.save(savfil+'.mp4', writer="ffmpeg", fps=5, 
+        ani.save(savfil+'.mp4', writer="ffmpeg", fps=30, 
                 extra_args=['-vcodec', 'libx264'])
     else:
         plt.show()
@@ -30,8 +31,9 @@ def animate(var,fig=None,**kwargs):
     def animator(i):
         """Updates the figure for each iteration"""
         fig.clear()
-        var.isel(Time=i).plot.contourf(**kwargs)
-        print(i)
+        var.isel(Time=i+1).plot.contourf(**kwargs)
+        sys.stdout.write('\r'+str(int((i+1)/(var.Time.size-1)*100))+'% done...')
+        sys.stdout.flush()
         return fig,
 
     anim = animation.FuncAnimation(fig, animator,frames=var.Time.size-1, 
