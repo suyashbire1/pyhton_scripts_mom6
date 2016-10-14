@@ -83,6 +83,8 @@ def animate(fh,var,fig=None,wlon=-25,elon=0,
         pvar = np.squeeze(fh.variables[var][i,zs:ze,ys:ye,xs:xe])
         plt.contourf(x,y,pvar,**plotkwargs)
         plt.colorbar()
+        sys.stdout.write('\r'+str(int((i+1)/nt*100))+'% done...')
+        sys.stdout.flush()
         return fig,
 
     anim = animation.FuncAnimation(fig, animator, 
