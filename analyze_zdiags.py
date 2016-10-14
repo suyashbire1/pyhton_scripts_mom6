@@ -12,7 +12,7 @@ def plottanimation(fil,levels=None,yinc=True,savfil=None,**iselargs):
     ani = animate(T.isel(**iselargs),levels=levels,yincrease=yinc)
 
     if savfil:
-        ani.save(savfil+'.mp4', writer="ffmpeg", fps=desfps, 
+        ani.save(savfil+'.mp4', writer="ffmpeg", fps=5, 
                 extra_args=['-vcodec', 'libx264'])
     else:
         plt.show()
@@ -31,9 +31,10 @@ def animate(var,fig=None,**kwargs):
         """Updates the figure for each iteration"""
         fig.clear()
         var.isel(Time=i).plot.contourf(**kwargs)
+        print(i)
         return fig,
 
-    anim = animation.FuncAnimation(fig, animator,frames=ds.Time.size-1, 
+    anim = animation.FuncAnimation(fig, animator,frames=var.Time.size-1, 
             interval=30, blit=True)
     return anim
 
