@@ -29,9 +29,9 @@ def extract_twapv_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         fhgeo.close()
         
         xmom = extract_twamomx_terms(geofil,vgeofil,fil,xs,xe,ys,ye+1,zs,ze,(0,),
-                alreadysaved=False,xyasindices=True)[2]
+                alreadysaved=False,xyasindices=True,calledfrompv=True)[2]
         ymom = extract_twamomy_terms(geofil,vgeofil,fil,xs,xe,ys,ye,zs,ze,(0,),
-                alreadysaved=False,xyasindices=True)[2]
+                alreadysaved=False,xyasindices=True,calledfrompv=True)[2]
 
         xmom = xmom[np.newaxis,:,:,:,:]
         ymom = ymom[np.newaxis,:,:,:,:]
