@@ -103,8 +103,12 @@ def getdims(fh):
         zl = fh.variables['zl'][:]
     except KeyError:
         zl = None
+    try:
+        zlremap = fh.variables['zl_remap'][:]
+    except KeyError:
+        zlremap = None
 
-    return (xh,yh), (xq,yq), (zi,zl), time
+    return (xh,yh), (xq,yq), (zi,zl,zlremap), time
 
 def getvar(var,fh,filename,wlon=-25,elon=0,slat=10,nlat=60,
         zs=0,ze=None,ts=0,te=None, xhxq='xh',yhyq='yh',zlzi='zl'):
@@ -116,7 +120,7 @@ def getvar(var,fh,filename,wlon=-25,elon=0,slat=10,nlat=60,
     | time are given in index numbers.
     | ** Future: Add capability for striding.
     """
-    (xh,yh), (xq,yq), (zi,zl), time = getdims(filename)
+    (xh,yh), (xq,yq), (zi,zl,zlremap), time = getdims(fh)
     x = eval(xhxq)
     y = eval(yhyq)
     z = eval(zlzi)
@@ -133,7 +137,7 @@ def getvar(var,fh,filename,wlon=-25,elon=0,slat=10,nlat=60,
 
 def getlatlonindx(fh,wlon=-25,elon=0,slat=10,nlat=60,
         zs=0,ze=None,ts=0,te=None,xhxq='xh',yhyq='yh',zlzi='zl'):
-    (xh,yh), (xq,yq), (zi,zl), time = getdims(fh)
+    (xh,yh), (xq,yq), (zi,zl,zlremap), time = getdims(fh)
     x = eval(xhxq)
     y = eval(yhyq)
     z = eval(zlzi)
@@ -149,7 +153,7 @@ def getlatlonindx(fh,wlon=-25,elon=0,slat=10,nlat=60,
 
 def getdimsbyindx(fh,xs,xe,ys,ye,
         zs=0,ze=None,ts=0,te=None,xhxq='xh',yhyq='yh',zlzi='zl'):
-    (xh,yh), (xq,yq), (zi,zl), time = getdims(fh)
+    (xh,yh), (xq,yq), (zi,zl,zlremap), time = getdims(fh)
     x = eval(xhxq)
     y = eval(yhyq)
     z = eval(zlzi)
