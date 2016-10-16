@@ -232,7 +232,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         edlsqm = (edl**2)
         pfu = fh.variables['PFu'][0:1,zs:ze,ys:ye,xs:xe]
         pfud = pfu - pfum/nt_const
-        geta = 9.8*np.concatenate((e[:,:1,:,:],e[:,:1,:,-1:]),axis=3)/1031
+        geta = 9.8*np.concatenate((ed[:,:1,:,:],ed[:,:1,:,-1:]),axis=3)/1031
         getax = np.diff(geta,axis=3)/dxcu
         pfud = np.concatenate((-getax,pfud,np.zeros([pfud.shape[0],1,pfud.shape[2],pfud.shape[3]])),axis=1)
         pfud = 0.5*(pfud[:,0:-1,:,:] + pfud[:,1:,:,:])
@@ -247,7 +247,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
             edlsqm += (edl**2)
             pfu = fh.variables['PFu'][i:i+1,zs:ze,ys:ye,xs:xe]
             pfud = pfu - pfum/nt_const
-            geta = 9.8*np.concatenate((e[:,:1,:,:],e[:,:1,:,-1:]),axis=3)/1031
+            geta = 9.8*np.concatenate((ed[:,:1,:,:],ed[:,:1,:,-1:]),axis=3)/1031
             getax = np.diff(geta,axis=3)/dxcu
             pfud = np.concatenate((-getax,pfud,np.zeros([pfud.shape[0],1,pfud.shape[2],pfud.shape[3]])),axis=1)
             pfud = 0.5*(pfud[:,0:-1,:,:] + pfud[:,1:,:,:])
