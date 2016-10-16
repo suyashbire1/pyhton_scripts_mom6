@@ -266,7 +266,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         bdivep1 = hvwbm/h_vm
         bdivep2 = -advb
         bdivep3 = -vtwa*hwb_v/h_vm 
-        bdivep4 = np.diff(edpfvdm,axis=1)/db*dbl/h_vm
+        bdivep4 = np.diff(edpfvdm,axis=1)/db[:,np.newaxis,np.newaxis]*dbl[:,np.newaxis,np.newaxis]/h_vm
         bdivep = (bdivep1 + bdivep2 + bdivep3 + bdivep4)
 
         Y1twa = hdiffvm/h_vm

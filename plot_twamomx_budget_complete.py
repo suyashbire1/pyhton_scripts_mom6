@@ -283,7 +283,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         bdivep1 = huwbm/h_um
         bdivep2 = -advb
         bdivep3 = -utwa*hwb_u/h_um 
-        bdivep4 = np.diff(edpfudm,axis=1)/db*dbl/h_um
+        bdivep4 = np.diff(edpfudm,axis=1)/db[:,np.newaxis,np.newaxis]*dbl[:,np.newaxis,np.newaxis]/h_um
         bdivep = (bdivep1 + bdivep2 + bdivep3 + bdivep4)
         X1twa = hdiffum/h_um
         X2twa = hdudtviscm/h_um
