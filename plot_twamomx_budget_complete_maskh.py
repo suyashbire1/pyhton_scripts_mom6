@@ -316,11 +316,12 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         termsm = np.ma.apply_over_axes(np.nanmean, terms, meanax)
         termsepm = np.ma.apply_over_axes(np.nanmean, termsep, meanax)
 
+        elm = 0.5*(em[:,:-1,:,:]+em[:,1:,:,:])
         X = dimu[keepax[1]]
         Y = dimu[keepax[0]]
         if 1 in keepax:
             em = np.ma.apply_over_axes(np.mean, em, meanax)
-            elm = np.ma.apply_over_axes(np.mean, elmatu/nt, meanax)
+            elm = np.ma.apply_over_axes(np.mean, elm, meanax)
             Y = elm.squeeze()
             X = np.meshgrid(X,dimu[1])[0]
 

@@ -304,11 +304,12 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         termsm = np.ma.apply_over_axes(np.nanmean, terms, meanax)
         termsepm = np.ma.apply_over_axes(np.nanmean, termsep, meanax)
 
+        elm = 0.5*(em[:,:-1,:,:]+em[:,1:,:,:])
         X = dimv[keepax[1]]
         Y = dimv[keepax[0]]
         if 1 in keepax:
             em = np.ma.apply_over_axes(np.mean, em, meanax)
-            elm = np.ma.apply_over_axes(np.mean, elmatv/nt, meanax)
+            elm = np.ma.apply_over_axes(np.mean, elm, meanax)
             Y = elm.squeeze()
             X = np.meshgrid(X,dimv[1])[0]
 
