@@ -218,7 +218,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         edlsqm = (edl**2)
         pfv = fh.variables['PFv'][0:1,zs:ze,ys:ye,xs:xe]
         pfvd = pfv - pfvm/nt_const
-        pfvd = np.concatenate((-pfvd[:,[0],:,:],pfvd,np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]])),axis=1)
+        pfvd = np.concatenate((pfvd[:,[0],:,:],pfvd,np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]])),axis=1)
         pfvd = 0.5*(pfvd[:,0:-1,:,:] + pfvd[:,1:,:,:])
         ed = 0.5*(ed[:,:,0:-1,:] + ed[:,:,1:,:]) 
         edpfvdm = ed*pfvd
@@ -230,7 +230,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
             edlsqm += (edl**2)
             pfv = fh.variables['PFv'][i:i+1,zs:ze,ys:ye,xs:xe]
             pfvd = pfv - pfvm/nt_const
-            pfvd = np.concatenate((-pfvd[:,[0],:,:],pfvd,np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]])),axis=1)
+            pfvd = np.concatenate((pfvd[:,[0],:,:],pfvd,np.zeros([pfvd.shape[0],1,pfvd.shape[2],pfvd.shape[3]])),axis=1)
             pfvd = 0.5*(pfvd[:,0:-1,:,:] + pfvd[:,1:,:,:])
             ed = 0.5*(ed[:,:,0:-1,:] + ed[:,:,1:,:]) 
             edpfvdm += ed*pfvd
