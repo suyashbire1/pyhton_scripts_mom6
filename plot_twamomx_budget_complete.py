@@ -234,8 +234,9 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         pfud = pfu - pfum/nt_const
         geta = 9.8*np.concatenate((ed[:,:1,:,:],ed[:,:1,:,-1:]),axis=3)/1031
         getax = np.diff(geta,axis=3)/dxcu
-        pfud = np.concatenate((-getax,pfud,np.zeros([pfud.shape[0],1,pfud.shape[2],pfud.shape[3]])),axis=1)
+        pfud = np.concatenate((pfud,np.zeros([pfud.shape[0],1,pfud.shape[2],pfud.shape[3]])),axis=1)
         pfud = 0.5*(pfud[:,0:-1,:,:] + pfud[:,1:,:,:])
+        pfud = np.concatenate((-getax,pfud),axis=1)
         ed = np.concatenate((ed,-ed[:,:,:,-1:]),axis=3)
         ed = 0.5*(ed[:,:,:,0:-1] + ed[:,:,:,1:]) 
         edpfudm = ed*pfud
@@ -249,8 +250,9 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
             pfud = pfu - pfum/nt_const
             geta = 9.8*np.concatenate((ed[:,:1,:,:],ed[:,:1,:,-1:]),axis=3)/1031
             getax = np.diff(geta,axis=3)/dxcu
-            pfud = np.concatenate((-getax,pfud,np.zeros([pfud.shape[0],1,pfud.shape[2],pfud.shape[3]])),axis=1)
+            pfud = np.concatenate((pfud,np.zeros([pfud.shape[0],1,pfud.shape[2],pfud.shape[3]])),axis=1)
             pfud = 0.5*(pfud[:,0:-1,:,:] + pfud[:,1:,:,:])
+            pfud = np.concatenate((-getax,pfud),axis=1)
             ed = np.concatenate((ed,-ed[:,:,:,-1:]),axis=3)
             ed = 0.5*(ed[:,:,:,0:-1] + ed[:,:,:,1:]) 
             edpfudm += ed*pfud
