@@ -61,17 +61,18 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         h_cvforydiff = fh.variables['h_Cv'][0:,zs:ze,ys-1:ye+1,xs:xe]
         vtwaforydiff = vhforydiff/h_cvforydiff/dxcvforydiff
 
-        vtwax = np.diff(vtwaforxdiff.filled(0),axis=3)/dxbu
+        vtwax = np.diff(vtwaforxdiff,axis=3)/dxbu
         vtwax = 0.5*(vtwax[:,:,:,0:-1] + vtwax[:,:,:,1:])
 
         vtway = np.diff(vtwaforydiff,axis=2)/dyt
         vtway = 0.5*(vtway[:,:,0:-1,:] + vtway[:,:,1:,:])
 
-        hvmy = np.diff(vhforydiff.filled(0)/dxcvforydiff,axis=3)/dyt
+        hvmy = np.diff(vhforydiff/dxcvforydiff,axis=2)/dyt
         hvmy = 0.5*(hvmy[:,:,:-1,:] + hvmy[:,:,1:,:])
 
-        hum = fh.variables['hu_Cv'][0:,zs:ze,ys:ye,xs-1:xe]
-        humforxdiff = np.concatenate((hum,-hum[:,:,:,-1:]),axis=3)
+        hum = fh.variables['hu_Cv'][0:,zs:ze,ys:ye,xs:xe]
+        humforxdiff = fh.variables['hu_Cv'][0:,zs:ze,ys:ye,xs-1:xe]
+        humforxdiff = np.concatenate((humforxdiff,-humforxdiff[:,:,:,-1:]),axis=3)
         humx = np.diff(humforxdiff,axis=3)/dxbu
         humx = 0.5*(humx[:,:,:,:-1] + humx[:,:,:,1:])
 
@@ -108,7 +109,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         hdvdtviscm = fh.variables['twa_hdvdtvisc'][0:1,zs:ze,ys:ye,xs:xe]
         fh.close()
 
-        advx = hum*vtwax
+        advx = hum*vtwax/h_vm
         advy = vtwa*vtway
         advb = hwm_v*vtwab/h_vm
         cor = hmfum/h_vm
@@ -137,7 +138,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
                                     -advy[:,:,:,:,np.newaxis],
                                     -advb[:,:,:,:,np.newaxis],
                                     cor[:,:,:,:,np.newaxis],
-                                    pfum[:,:,:,:,np.newaxis],
+                                    pfvm[:,:,:,:,np.newaxis],
                                     -xdivep[:,:,:,:,np.newaxis],
                                     -ydivep[:,:,:,:,np.newaxis],
                                     -bdivep[:,:,:,:,np.newaxis],
