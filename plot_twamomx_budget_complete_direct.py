@@ -49,6 +49,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
 
         uh = fh.variables['uh'][0:,zs:ze,ys:ye,xs:xe]
         h_cu = fh.variables['h_Cu'][0:,zs:ze,ys:ye,xs:xe]
+        hum = h_cu
         utwa = uh/h_cu/dycu
 
         uhforxdiff = fh.variables['uh'][0:,zs:ze,ys:ye,xs-1:xe]
