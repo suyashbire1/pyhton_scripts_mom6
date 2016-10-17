@@ -99,6 +99,9 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         ecu = fh.variables['e_Cu'][0:,zs:ze,ys:ye,xs:xe]
         pfum = fh.variables['PFu'][0:,zs:ze,ys:ye,xs:xe]
         edpfudm = epfu - pfum*ecu
+        edpfudmb = np.diff(edpfudm,axis=1)
+        edpfudmb = np.concatenate((edpfudmb[:,:1,:,:],edpfudmb,edpfudmb[:,-1:,:,:]),axis=1)
+        edpfudmb = 0.5*(edpfudmb[:,:-1,:,:] + edpfudmb[:,1:,:,:])
 
         hfvm = fh.variables['twa_hfv'][0:1,zs:ze,ys:ye,xs:xe]
         huwbm = fh.variables['twa_huwb'][0:1,zs:ze,ys:ye,xs:xe]
@@ -126,7 +129,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         bdivep1 = huwbm/h_um
         bdivep2 = -advb
         bdivep3 = -utwa*hwb_u/h_um 
-        bdivep4 = np.diff(edpfudm,axis=1)/h_um
+        bdivep4 = /h_um
         bdivep = (bdivep1 + bdivep2 + bdivep3 + bdivep4)
         X1twa = hdiffum/h_um
         X2twa = hdudtviscm/h_um
