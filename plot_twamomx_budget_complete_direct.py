@@ -67,7 +67,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         utway = np.diff(utwaforydiff,axis=2)/dybu
         utway = 0.5*(utway[:,:,0:-1,:] + utway[:,:,1:,:])
 
-        humx = np.diff(uhforxdiff.filled(0),axis=3)/dxt
+        humx = np.diff(uhforxdiff.filled(0)/dycuforxdiff,axis=3)/dxt
         humx = np.concatenate((humx,-humx[:,:,:,[-1]]),axis=3)
         humx = 0.5*(humx[:,:,:,0:-1] + humx[:,:,:,1:])
 
