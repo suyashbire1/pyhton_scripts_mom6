@@ -70,6 +70,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         humx = np.concatenate((humx,-humx[:,:,:,[-1]]),axis=3)
         humx = 0.5*(humx[:,:,:,0:-1] + humx[:,:,:,1:])
 
+        hvm = fh.variables['hv_Cu'][0:,zs:ze,ys:ye,xs:xe]
         hv_cu = fh.variables['hv_Cu'][0:,zs:ze,ys-1:ye+1,xs:xe]
         hvmy = np.diff(hv_cu,axis=2)/dyt1
         hvmy = 0.5*(hvmy[:,:,:-1,:] + hvmy[:,:,1:,:])
