@@ -40,6 +40,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         dycuforxdiff = rdp1.getgeombyindx(fhgeo,xs-1,xe,ys,ye)[2][1:2]
         dycuforydiff = rdp1.getgeombyindx(fhgeo,xs,xe,ys-1,ye+1)[2][1:2]
         dybu = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye+1)[2][5]
+        dyt1 = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye+1)[2][7]
         nt_const = dimu[0].size
         t0 = time.time()
 
@@ -70,14 +71,13 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         humx = 0.5*(humx[:,:,:,0:-1] + humx[:,:,:,1:])
 
         hv_cu = fh.variables['hv_Cu'][0:,zs:ze,ys-1:ye+1,xs:xe]
-        hvmy = np.diff(hvmforydiff,axis=2)/dyt
-        hvmy = np.concatenate((hvmy,-hvmy[:,:,:,[-1]]),axis=3)
-        hvmy = 0.5*(hvmy[:,:,:,0:-1] + hvmy[:,:,:,1:])
+        hvmy = np.diff(hv_cu,axis=2)/dyt1
+        hvmy = 0.5*(hvmy[:,:,:-1,:] + hvmy[:,:,1:,:])
 
-        huuxphuvym = huuxpTm + huvymTm
-        huuxm = np.diff(huumforxdiff,axis=3)/dxt
-        huuxm = np.concatenate((huuxm,-huuxm[:,:,:,[-1]]),axis=3)
-        huuxm = 0.5*(huuxm[:,:,:,0:-1] + huuxm[:,:,:,1:])
+        huuxphuvym = fh.variables['twa_huuxpt'][0:,zs:ze,ys:ye,xs:xe] + fh.variables['twa_huvymt'][0:,zs:ze,ys:ye,xs:xe]
+        huu = fh.variables['huu_T'][0:,zs:ze,ys:ye,xs:xe]
+        huu = np.concatenate((huu,huu[:,:,:,-1:]),axis=3)
+        huuxm = np.diff(huu,axis=3)/dxcu
         huvym = huuxphuvym - huuxm
 
         utwaforvdiff = np.concatenate((utwa[:,[0],:,:],utwa),axis=1)
@@ -85,49 +85,30 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         utwab = np.concatenate((utwab,np.zeros([utwab.shape[0],1,utwab.shape[2],utwab.shape[3]])),axis=1)
         utwab = 0.5*(utwab[:,0:-1,:,:] + utwab[:,1:,:,:])
 
-        hwb_u = 0.5*(wdm[:,:,:,0:-1] + wdm[:,:,:,1:])
+        hwb_u = fh.variables['hwb_Cu'][0:,zs:ze,ys:ye,xs:xe]
+        hwm_u = fh.variables['hw_Cu'][0:,zs:ze,ys:ye,xs:xe]
 
-        print('Calulcating form drag using loop...')
-        t0 = time.time()
-        e = fh.variables['e'][0:1,zs:ze,ys:ye,xs:xe]
-        el = 0.5*(e[:,0:-1,:,:] + e[:,1:,:,:])
-        ed = e - em
-        edl = el - elm
-        edlsqm = (edl**2)
-        pfu = fh.variables['PFu'][0:1,zs:ze,ys:ye,xs:xe]
-        pfud = pfu - pfum/nt_const
-        pfud = np.concatenate((-pfud[:,[0],:,:],pfud,np.zeros([pfud.shape[0],1,pfud.shape[2],pfud.shape[3]])),axis=1)
-        pfud = 0.5*(pfud[:,0:-1,:,:] + pfud[:,1:,:,:])
-        ed = np.concatenate((ed,-ed[:,:,:,-1:]),axis=3)
-        ed = 0.5*(ed[:,:,:,0:-1] + ed[:,:,:,1:]) 
-        edpfudm = ed*pfud
-        for i in range(1,nt_const):
-            e = fh.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]
-            el = 0.5*(e[:,0:-1,:,:] + e[:,1:,:,:])
-            ed = e - em
-            edl = el - elm
-            edlsqm += (edl**2)
-            pfu = fh.variables['PFu'][i:i+1,zs:ze,ys:ye,xs:xe]
-            pfud = pfu - pfum/nt_const
-            pfud = np.concatenate((-pfud[:,[0],:,:],pfud,np.zeros([pfud.shape[0],1,pfud.shape[2],pfud.shape[3]])),axis=1)
-            pfud = 0.5*(pfud[:,0:-1,:,:] + pfud[:,1:,:,:])
-            ed = np.concatenate((ed,-ed[:,:,:,-1:]),axis=3)
-            ed = 0.5*(ed[:,:,:,0:-1] + ed[:,:,:,1:]) 
-            edpfudm += ed*pfud
-
-            sys.stdout.write('\r'+str(int((i+1)/nt_const*100))+'% done...')
-            sys.stdout.flush()
-
-        print('Time taken for data reading: {}s'.format(time.time()-t0))
-        fh.close()
-            
+        esq = fh.variables['esq'][0:,zs:ze,ys:ye,xs:xe]
+        edlsqm = (esq - elm**2)
         edlsqm = np.concatenate((edlsqm,edlsqm[:,:,:,[-1]]),axis=3)
         edlsqmx = np.diff(edlsqm,axis=3)/dxcu
+
+        epfu = fh.variables['epfu'][0:,zs:ze,ys:ye,xs:xe]
+        ecu = fh.variables['e_Cu'][0:,zs:ze,ys:ye,xs:xe]
+        pfum = fh.variables['pfum'][0:,zs:ze,ys:ye,xs:xe]
+        edpfudm = epfu - pfum*ecu
+
+        hfvm = fh.variables['twa_hfv'][0:1,zs:ze,ys:ye,xs:xe]
+        huwbm = fh.variables['twa_huwb'][0:1,zs:ze,ys:ye,xs:xe]
+        hdiffum = fh.variables['twa_hdiffu'][0:1,zs:ze,ys:ye,xs:xe]
+        hdudtviscm = fh.variables['twa_hdudtvisc'][0:1,zs:ze,ys:ye,xs:xe]
+        fh.close()
+
         advx = utwa*utwax
         advy = hvm*utway/h_um
         advb = hwm_u*utwab/h_um
         cor = hfvm/h_um
-        pfum = pfum/nt_const
+        pfum = pfum
 
         xdivep1 = huuxm/h_um
         xdivep2 = -advx
