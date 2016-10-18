@@ -32,7 +32,7 @@ def extract_northward_transport(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze
                                     vhminus[:,:,:,:,np.newaxis]),axis=4)
 
         termsm = np.ma.apply_over_axes(np.mean, terms, meanax)
-        termsm = termsm.squeeze()/1e6
+        termsm = termsm.squeeze()
         X = dimv[keepax[1]]
         Y = dimv[keepax[0]]
 
@@ -53,7 +53,7 @@ def plot_nt(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         else:
             plt.ylabel('z (m)')
 
-        if i > 7:
+        if i > -1:
             plt.xlabel('x from EB (Deg)')
         else:
             ax.set_xticklabels([])
