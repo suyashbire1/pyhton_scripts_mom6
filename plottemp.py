@@ -17,7 +17,9 @@ def extractT(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,ts=0,te=None,
     fh = mfdset(fil)
     (xs,xe),(ys,ye),dimh = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
             slat=ystart, nlat=yend,zs=zs,ze=ze)
-    D = rdp1.getgeombyindx(geofil,xs,xe,ys,ye)[0]
+    fhgeo = mfdset(geofil)
+    D = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[0]
+    fhgeo.close()
     nt = dimh[0].size
     t0 = time.time()
 
