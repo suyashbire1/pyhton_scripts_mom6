@@ -15,8 +15,6 @@ def plot_eb_transport(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,sa
             keepax += (i,)
 
     fh = mfdset(fil)
-    zi = rdp1.getdims(fh)[2][0]
-    dbl = -np.diff(zi)*9.8/1031
     (xs,xe),(ys,ye),dimv = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
             slat=ystart, nlat=yend,zs=zs,ze=ze,yhyq='yq')
     fhgeo = dset(geofil)
@@ -31,11 +29,12 @@ def plot_eb_transport(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,sa
     X = dimv[keepax[1]]
     Y = dimv[keepax[0]]
     if 1 in keepax:
-        z = np.linspace(-np.nanmax(D),-1,num=50)
+        z = np.linspace(-np.nanmax([2000]),-1,num=50)
         Y = z 
     P = getvaratz(vh,z,e)
     P = np.ma.apply_over_axes(np.mean, P, meanax)
     P = P.squeeze()
+    #P = np.ma.apply_over_axes(np.mean, vh, meanax).squeeze()
     im = m6plot((X,Y,P),titl='Transport near EB', ylab='z (m)', xlab='x from EB (Deg)')
     
     if savfil:
