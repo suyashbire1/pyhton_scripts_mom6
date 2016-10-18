@@ -24,7 +24,7 @@ def extract_northward_transport(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze
         dxcv = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[2][2]
         nt_const = dimv[0].size
         fhgeo.close()
-        vh = fh.variables['vh'][0:,zs:ze,ys:ye,xs:xe]/dxcv
+        vh = fh.variables['vh'][0:,zs:ze,ys:ye,xs:xe]
         vh = vh.filled(0)
         vhplus = np.where(vh>0,vh,0)
         vhminus = np.where(vh<0,vh,0)
@@ -32,7 +32,7 @@ def extract_northward_transport(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze
                                     vhminus[:,:,:,:,np.newaxis]),axis=4)
 
         termsm = np.ma.apply_over_axes(np.mean, terms, meanax)
-        termsm = termsm.squeeze()
+        termsm = termsm.squeeze()/1e6
         X = dimv[keepax[1]]
         Y = dimv[keepax[0]]
 
