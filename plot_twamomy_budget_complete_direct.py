@@ -54,7 +54,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         vhforxdiff = fh.variables['vh'][0:,zs:ze,ys:ye,xs-1:xe]
         h_cvforxdiff = fh.variables['h_Cv'][0:,zs:ze,ys:ye,xs-1:xe]
         vtwaforxdiff = vhforxdiff/h_cvforxdiff/dxcvforxdiff
-        vtwaforxdiff = np.concatenate((vtwaforxdiff,vtwaforxdiff[:,:,:,-1:]),axis=3)
+        vtwaforxdiff = np.concatenate((vtwaforxdiff,-vtwaforxdiff[:,:,:,-1:]),axis=3)
 
         vhforydiff = fh.variables['vh'][0:,zs:ze,ys-1:ye+1,xs:xe]
         h_cvforydiff = fh.variables['h_Cv'][0:,zs:ze,ys-1:ye+1,xs:xe]
