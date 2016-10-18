@@ -77,9 +77,10 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         hvmy = 0.5*(hvmy[:,:,:-1,:] + hvmy[:,:,1:,:])
 
         huuxphuvym = fh.variables['twa_huuxpt'][0:,zs:ze,ys:ye,xs:xe] + fh.variables['twa_huvymt'][0:,zs:ze,ys:ye,xs:xe]
-        huu = fh.variables['huu_T'][0:,zs:ze,ys:ye,xs:xe]
-        huu = np.concatenate((huu,huu[:,:,:,-1:]),axis=3)
-        huuxm = np.diff(huu,axis=3)/dxcu
+        huu = fh.variables['huu_Cu'][0:,zs:ze,ys:ye,xs-1:xe].filled(0)
+        huuxm = np.diff(huu,axis=3)/dxt
+        huuxm = np.concatenate((huuxm,-huuxm[:,:,:,-1:]),axis=3)
+        huuxm = 0.5*(huuxm[:,:,:,:-1] + huuxm[:,:,:,1:])
         huvym = huuxphuvym - huuxm
 
         utwaforvdiff = np.concatenate((utwa[:,[0],:,:],utwa),axis=1)
@@ -90,10 +91,12 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         hwb_u = fh.variables['hwb_Cu'][0:,zs:ze,ys:ye,xs:xe]
         hwm_u = fh.variables['hw_Cu'][0:,zs:ze,ys:ye,xs:xe]
 
-        esq = fh.variables['esq'][0:,zs:ze,ys:ye,xs:xe]
-        edlsqm = (esq - elm**2)
-        edlsqm = np.concatenate((edlsqm,edlsqm[:,:,:,[-1]]),axis=3)
-        edlsqmx = np.diff(edlsqm,axis=3)/dxcu
+        esq = fh.variables['esq_Cu'][0:,zs:ze,ys:ye,xs-1:xe].filled(0)
+        ecu = fh.variables['e_Cu'][0:,zs:ze,ys:ye,xs-1:xe].filled(0)
+        edlsqm = (esq - ecu**2)
+        edlsqmx = np.diff(edlsqm,axis=3)/dxt
+        edlsqmx = np.concatenate((edlsqmx,-edlsqmx[:,:,:,[-1]]),axis=3)
+        edlsqmx = 0.5*(edlsqmx[:,:,:,:-1] + edlsqmx[:,:,:,1:])
 
         epfu = fh.variables['epfu'][0:,zs:ze,ys:ye,xs:xe]
         ecu = fh.variables['e_Cu'][0:,zs:ze,ys:ye,xs:xe]

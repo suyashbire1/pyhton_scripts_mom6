@@ -40,7 +40,6 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         dxcvforxdiff = rdp1.getgeombyindx(fhgeo,xs-1,xe,ys,ye)[2][2:3]
         dxcvforydiff = rdp1.getgeombyindx(fhgeo,xs,xe,ys-1,ye+1)[2][3:4]
         dxbu = rdp1.getgeombyindx(fhgeo,xs-1,xe,ys,ye)[2][4]
-        dyt1 = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye+1)[2][7]
         nt_const = dimv[0].size
         t0 = time.time()
 
@@ -77,8 +76,9 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         humx = 0.5*(humx[:,:,:,:-1] + humx[:,:,:,1:])
 
         huvxphvvym = fh.variables['twa_huvxpt'][0:,zs:ze,ys:ye,xs:xe] + fh.variables['twa_hvvymt'][0:,zs:ze,ys:ye,xs:xe]
-        hvv = fh.variables['hvv_T'][0:,zs:ze,ys:ye+1,xs:xe]
-        hvvym = np.diff(hvv,axis=2)/dycv
+        hvv = fh.variables['hvv_Cv'][0:,zs:ze,ys-1:ye+1,xs:xe]
+        hvvym = np.diff(hvv,axis=2)/dyt
+        hvvym = 0.5*(hvvym[:,:,:-1,:] + hvvym[:,:,1:,:])
         huvxm = huvxphvvym - hvvym
 
         vtwaforvdiff = np.concatenate((vtwa[:,[0],:,:],vtwa),axis=1)
@@ -89,11 +89,11 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         hwb_v = fh.variables['hwb_Cv'][0:,zs:ze,ys:ye,xs:xe]
         hwm_v = fh.variables['hw_Cv'][0:,zs:ze,ys:ye,xs:xe]
 
-        emforydiff = fh.variables['e'][0:,zs:ze,ys:ye+1,xs:xe]
-        elmforydiff = 0.5*(emforydiff[:,0:-1,:,:]+emforydiff[:,1:,:,:])
-        esq = fh.variables['esq'][0:,zs:ze,ys:ye+1,xs:xe]
-        edlsqm = (esq - elmforydiff**2)
-        edlsqmy = np.diff(edlsqm,axis=2)/dycv
+        esq = fh.variables['esq_Cv'][0:,zs:ze,ys-1:ye+1,xs:xe]
+        ecv = fh.variables['e_Cv'][0:,zs:ze,ys-1:ye+1,xs:xe]
+        edlsqm = (esq - ecv**2)
+        edlsqmy = np.diff(edlsqm,axis=2)/dyt
+        edlsqmy = 0.5*(edlsqmy[:,:,:-1,:] + edlsqmy[:,:,1:,:])
 
         epfv = fh.variables['epfv'][0:,zs:ze,ys:ye,xs:xe]
         ecv = fh.variables['e_Cv'][0:,zs:ze,ys:ye,xs:xe]
