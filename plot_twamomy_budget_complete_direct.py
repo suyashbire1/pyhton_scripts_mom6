@@ -97,7 +97,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
 
         epfv = fh.variables['epfv'][0:,zs:ze,ys:ye,xs:xe]
         ecv = fh.variables['e_Cv'][0:,zs:ze,ys:ye,xs:xe]
-        pfvm = fh.variables['PFv'][0:,zs:ze,ys:ye,xs:xe]
+        pfvm = fh.variables['pfv_masked'][0:,zs:ze,ys:ye,xs:xe]
         edpfvdm = epfv - pfvm*ecv
         edpfvdmb = np.diff(edpfvdm,axis=1)
         edpfvdmb = np.concatenate((edpfvdmb[:,:1,:,:],edpfvdmb,edpfvdmb[:,-1:,:,:]),axis=1)

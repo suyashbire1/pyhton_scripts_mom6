@@ -100,7 +100,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
 
         epfu = fh.variables['epfu'][0:,zs:ze,ys:ye,xs:xe]
         ecu = fh.variables['e_Cu'][0:,zs:ze,ys:ye,xs:xe]
-        pfum = fh.variables['PFu'][0:,zs:ze,ys:ye,xs:xe]
+        pfum = fh.variables['pfu_masked'][0:,zs:ze,ys:ye,xs:xe]
         edpfudm = epfu - pfum*ecu
         edpfudmb = np.diff(edpfudm,axis=1)
         edpfudmb = np.concatenate((edpfudmb[:,:1,:,:],edpfudmb,edpfudmb[:,-1:,:,:]),axis=1)
