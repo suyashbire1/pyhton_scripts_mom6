@@ -1,6 +1,6 @@
 def m6plot(data,ax=None,xticks=None,yticks=None,
         xlab=None,ylab=None,savfil=None,
-        Zmax=None,Zmin=None,titl=None,cmap=None):
+        Zmax=None,Zmin=None,titl=None,cmap=None,cbar=True):
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -23,9 +23,10 @@ def m6plot(data,ax=None,xticks=None,yticks=None,
     else:
         im = ax.contourf(X, Y, Z, Zctr, cmap=plt.cm.RdBu_r)
         
-    cbar = plt.colorbar(im, ticks=Zcbar)
-    cbar.formatter.set_powerlimits((-3, 4))
-    cbar.update_ticks()
+    if cbar:
+        cbar = plt.colorbar(im, ticks=Zcbar)
+        cbar.formatter.set_powerlimits((-3, 4))
+        cbar.update_ticks()
     if xticks:
         ax.set_xticks(xticks)
     if yticks:

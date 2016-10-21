@@ -35,11 +35,11 @@ def plot_eb_transport(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,sa
     P = np.ma.apply_over_axes(np.mean, P, meanax)
     P = P.squeeze()
     #P = np.ma.apply_over_axes(np.mean, vh, meanax).squeeze()
-    im = m6plot((X,Y,P),titl='Transport near EB', ylab='z (m)', xlab='x from EB (Deg)')
+    im = m6plot((X,Y,P),titl='Transport near EB', ylab='z (m)', xlab='y (Deg)')
     
     if savfil:
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
     else:
-        im = m6plot((X,Y,P),titl='Transport near EB', ylab='z (m)', xlab='x from EB (Deg)')
+        im = m6plot((X,Y,P),titl='Transport near EB', ylab='z (m)', xlab='y (Deg)')
         plt.show()

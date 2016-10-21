@@ -47,14 +47,18 @@ def plot_nt(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
     for i in range(P.shape[-1]):
         ax = plt.subplot(1,2,i+1)
-        im = m6plot((X,Y,P[:,:,i]),ax,Zmax=cmax,titl=ti[i])
+        if i = 1:
+            im = m6plot((X,Y,P[:,:,i]),ax,Zmax=cmax,titl=ti[i])
+        else:
+            im = m6plot((X,Y,P[:,:,i]),ax,Zmax=cmax,titl=ti[i],cbar=False)
+
         if i % 2:
             ax.set_yticklabels([])
         else:
-            plt.ylabel('z (m)')
+            plt.ylabel('y (deg)')
 
         if i > -1:
-            plt.xlabel('x from EB (Deg)')
+            plt.xlabel('x (Deg)')
         else:
             ax.set_xticklabels([])
     
