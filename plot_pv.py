@@ -20,7 +20,7 @@ def extract_twapv(geofil,vgeofil,fil,xstart,xend,ystart,yend,
     fhgeo = dset(geofil)
     fh = mfdset(fil)
     zi = rdp1.getdims(fh)[2][0]
-    dbl = -np.diff(zi)*9.8/1031
+    dbl = np.diff(zi)*9.8/1031
     (xs,xe),(ys,ye),dimq = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
             slat=ystart, nlat=yend,zs=zs,ze=ze,xhxq='xq',yhyq='yq')
     dxbu = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[2][4]
@@ -85,7 +85,7 @@ def extract_twapv(geofil,vgeofil,fil,xstart,xend,ystart,yend,
     pv = pv.squeeze()
     cmax = np.nanmax(np.absolute(pv))*cmaxscalefactor
     print(pv.shape,X.shape,Y.shape)
-    im = m6plot((X,Y,pv), Zmax=cmax)
+    im = m6plot((X,Y,pv), Zmin=0, Zmax=cmax)
 
     if savfil:
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
