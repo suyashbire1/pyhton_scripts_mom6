@@ -12,20 +12,26 @@ def m6plot(data,ax=None,xticks=None,yticks=None,
     X,Y,Z = data[0:3]
     if Zmax != None and Zmin != None:
         Zctr = np.linspace(Zmin,Zmax,num=26,endpoint=True)
+        vmin = Zmin
+        vmax = Zmax
     elif Zmax != None:
         Zctr = np.linspace(-Zmax,Zmax,num=12,endpoint=True)
+        vmin = -Zmax
+        vmax = Zmax
     else:
         Zmax = np.nanmax(np.absolute(Z))
         Zctr = np.linspace(-Zmax,Zmax,num=12,endpoint=True)
+        vmin = -Zmax
+        vmax = Zmax
 
     Zcbar = (Zctr[1:] + Zctr[:-1])/2
     if cmap:
-        im = ax.contourf(X, Y, Z, Zctr,cmap=cmap)
+        im = ax.pcolormesh(X, Y, Z, vmin=vmin, vmax=vmax, cmap=cmap)
     else:
-        im = ax.contourf(X, Y, Z, Zctr, cmap=plt.cm.RdBu_r)
+        im = ax.pcolormesh(X, Y, Z, vmin=vmin, vmax=vmax, cmap=plt.cm.RdBu_r)
         
     if cbar:
-        cbar = plt.colorbar(im, ticks=Zcbar, use_gridspec=True)
+        cbar = plt.colorbar(im, use_gridspec=True)
         cbar.formatter.set_powerlimits((-3, 4))
         cbar.update_ticks()
     if xticks:
