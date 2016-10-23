@@ -27,6 +27,7 @@ def extract_twapv(geofil,vgeofil,fil,xstart,xend,ystart,yend,
     dybu = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[2][5]
     dycu = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye+1)[2][1]
     dxcv = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[2][2]
+    f = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[-1]
     nt_const = dimq[0].size
     fhgeo.close()
     
@@ -66,7 +67,7 @@ def extract_twapv(geofil,vgeofil,fil,xstart,xend,ystart,yend,
     hq = 0.25*(h_cu[:,:,:-1,:] + h_cv[:,:,:,:-1] + 
             h_cu[:,:,1:,:] + h_cv[:,:,:,1:])
 
-    pv = -np.diff(utwa,axis=2)/dybu + np.diff(vtwa,axis=3)/dxbu
+    pv = f -np.diff(utwa,axis=2)/dybu + np.diff(vtwa,axis=3)/dxbu
     pv = pv/(hq/dbl[:,np.newaxis,np.newaxis])
 
     X = dimq[keepax[1]]
