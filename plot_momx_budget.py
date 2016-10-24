@@ -1,9 +1,9 @@
 import sys
 import readParams_moreoptions as rdp1
 import matplotlib.pyplot as plt
-from mom_plot import m6plot
+from mom_plot1 import m6plot, xdegtokm
 import numpy as np
-from netCDF4 import MFDataset as mfdset
+from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
 
 def extract_momx_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
@@ -15,15 +15,17 @@ def extract_momx_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             if i not in meanax:
                 keepax += (i,)
 
+        fhgeo = dset(geofil)
         fh = mfdset(fil)
         (xs,xe),(ys,ye),dimu = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
                 slat=ystart, nlat=yend,zs=zs,ze=ze,xhxq='xq')
-        D, (ah,aq) = rdp1.getgeombyindx(geofil,xs,xe,ys,ye)[0:2]
+        D, (ah,aq) = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[0:2]
+        fhgeo.close()
         nt = dimu[0].size
         t0 = time.time()
 
         print('Reading data using loop...')
-        dudtm = fh.variables['dudt'][0:1,zs:ze,ys:ye,xs:xe]/nt
+        #dudtm = fh.variables['dudt'][0:1,zs:ze,ys:ye,xs:xe]/nt
         caum = fh.variables['CAu'][0:1,zs:ze,ys:ye,xs:xe]/nt
         pfum = fh.variables['PFu'][0:1,zs:ze,ys:ye,xs:xe]/nt
         dudtviscm = fh.variables['du_dt_visc'][0:1,zs:ze,ys:ye,xs:xe]/nt
@@ -34,7 +36,7 @@ def extract_momx_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             print(caum.shape,em.shape)
 
         for i in range(1,nt):
-            dudtm += fh.variables['dudt'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
+            #dudtm += fh.variables['dudt'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
             caum += fh.variables['CAu'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
             pfum += fh.variables['PFu'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
             dudtviscm += fh.variables['du_dt_visc'][i:i+1,zs:ze,ys:ye,xs:xe]/nt
@@ -49,12 +51,12 @@ def extract_momx_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         fh.close()
         print('Time taken for data reading: {}s'.format(time.time()-t0))
 
-        terms = np.ma.concatenate(( dudtm[:,:,:,:,np.newaxis],
-                                    caum[:,:,:,:,np.newaxis],
+        terms = np.ma.concatenate(( caum[:,:,:,:,np.newaxis],
                                     dudtdiam[:,:,:,:,np.newaxis],
                                     pfum[:,:,:,:,np.newaxis],
-                                    dudtviscm[:,:,:,:,np.newaxis],
-                                    diffum[:,:,:,:,np.newaxis]),axis=4)
+                                    diffum[:,:,:,:,np.newaxis],
+                                    dudtviscm[:,:,:,:,np.newaxis]),axis=4)
+        terms = terms.filled(0)
 
         termsm = np.ma.apply_over_axes(np.mean, terms, meanax)
 
@@ -85,18 +87,26 @@ def plot_momx(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
     X,Y,P = extract_momx_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
             alreadysaved)
     cmax = np.nanmax(np.absolute(P))
-    plt.figure()
-    ti = ['(a)','(b)','(c)','(d)','(e)','(f)']
+    fig = plt.figure(figsize=(12, 9))
+    ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
+    lab = [ r'$\overline{(f+\zeta)v-(KE)_{\tilde{x}}}$', 
+            r'$-\overline{\varpi u_{\tilde{b}}}$',
+            r'$-\overline{m_{\tilde{x}}}$', 
+            r'$\overline{X^H}$', 
+            r'$\overline{X^V}$']
+
     for i in range(P.shape[-1]):
-        ax = plt.subplot(3,2,i+1)
-        im = m6plot((X,Y,P[:,:,i]),ax,Zmax=cmax,titl=ti[i])
+        ax = plt.subplot(5,2,i+1)
+        im = m6plot((X,Y,P[:,:,i]),ax,vmax=cmax,vmin=-cmax,
+                txt=lab[i], ylim=(-2500,0),cmap='RdBu_r')
         if i % 2:
             ax.set_yticklabels([])
         else:
-            plt.ylabel('z (m)')
+            ax.set_ylabel('z (m)')
 
-        if i > 3:
-            plt.xlabel('x from EB (Deg)')
+        if i > 2:
+            xdegtokm(ax,0.5*(ystart+yend))
+
         else:
             ax.set_xticklabels([])
     
@@ -104,5 +114,5 @@ def plot_momx(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
     else:
-        im = m6plot((X,Y,np.sum(P,axis=2)),Zmax=cmax)
+        im = m6plot((X,Y,np.sum(P,axis=2)),Zmax=cmax,cmap='RdBu_r')
         plt.show()
