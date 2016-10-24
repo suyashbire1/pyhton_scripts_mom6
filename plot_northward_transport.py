@@ -1,12 +1,12 @@
 import sys
 import readParams_moreoptions as rdp1
 import matplotlib.pyplot as plt
-from mom_plot import m6plot
+from mom_plot1 import m6plot, xdegtokm
 import numpy as np
 from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
 
-def extract_northward_transport(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,fil2=None):
+def extract_northward_transport(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax):
 
     keepax = ()
     for i in range(4):
@@ -24,12 +24,9 @@ def extract_northward_transport(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze
     nt_const = dimv[0].size
     fhgeo.close()
     vh = fh.variables['vh'][0:,zs:ze,ys:ye,xs:xe]
-    try:
-        h = fh.variables['h_Cv'][0:,zs:ze,ys:ye,xs:xe]
-    except:
-        fh2 = mfdset(fil2)
-        h = fh2.variables['h_Cv'][0:,zs:ze,ys:ye,xs:xe]
-        fh2.close()
+    fh2 = mfdset(fil2)
+    h = fh2.variables['h_Cv'][0:,zs:ze,ys:ye,xs:xe]
+    fh2.close()
     fh.close()
     vh = vh.filled(0)
     vhplus = np.where(vh>0,vh,0)
@@ -46,27 +43,27 @@ def extract_northward_transport(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze
 
     return X,Y, termsm, lr
 
-def plot_nt(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
-        cmaxscalefactor = 1, savfil=None, fil2=None):
-    X,Y,P,lr = extract_northward_transport(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,fil2=fil2)
+def plot_nt(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
+        cmaxscalefactor = 1, savfil=None):
+    X,Y,P,lr = extract_northward_transport(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax)
     cmax = np.nanmax(np.absolute(P))*cmaxscalefactor
-    plt.figure()
+    fig = plt.figure(figsize=(15, 9))
     ti = r'$\int_{-D}^{0} (vdx) dz$ $(m^3s^{-1})$' 
     for i in range(P.shape[-1]):
         ax = plt.subplot(1,4,i+2)
         if i == 1:
-            im = m6plot((X,Y,P[:,:,i]),ax,Zmax=cmax,txt=ti)
+            im = m6plot((X,Y,P[:,:,i]),ax,vmax=cmax,vmin=-cmax,txt=ti,cmap='RdBu_r')
         else:
-            im = m6plot((X,Y,P[:,:,i]),ax,Zmax=cmax,txt=ti,cbar=False)
+            im = m6plot((X,Y,P[:,:,i]),ax,vmax=cmax,vmin=-cmax,txt=ti,cmap='RdBu_r')
         ax.set_yticklabels([])
-        plt.xlabel(r'$x (^{\circ}$)')
+        xdegtokm(ax,0.5*(ystart+yend))
 
     ax = plt.subplot(1,4,4)
-    ax.plot(np.nanmean(P[:,:,0],axis=1)/1e6,Y,lw=2,label='North',color='r')
-    ax.plot(np.nanmean(-P[:,:,1],axis=1)/1e6,Y,lw=2,label='South',color='b')
-    ax.set_xlabel('EB transport (Sv)')
+    ax.plot(np.nanmean(P[:,:,0],axis=1)/1e3,Y,lw=2,label='North',color='r')
+    ax.plot(np.nanmean(-P[:,:,1],axis=1)/1e3,Y,lw=2,label='South',color='b')
+    ax.set_xlabel('EB transport ($10^3 m^3s^{-1}$)')
     ax.set_yticklabels([])
-    ax.text(0.1,0.05,r'$\int_{D}^{0} \int_{EB}^{} v dx dz$ (Sv)',transform=ax.transAxes)
+    ax.text(0.1,0.05,r'$\int_{D}^{0} \int_{EB}^{} v dx dz$ ($m^3s^{-1}$)',transform=ax.transAxes)
     ax.grid(True)
     plt.legend(loc='best')
 
