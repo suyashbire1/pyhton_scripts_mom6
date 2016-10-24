@@ -84,8 +84,8 @@ def extract_twapv(geofil,vgeofil,fil,xstart,xend,ystart,yend,
     pv = np.ma.apply_over_axes(np.nanmean, pv, meanax)
     pv = pv.squeeze()
     cmax = np.nanmax(np.absolute(pv))*cmaxscalefactor
-    print(pv.shape,X.shape,Y.shape)
-    im = m6plot((X,Y,pv), Zmin=0, Zmax=cmax)
+    im = m6plot((X,Y,pv), xlab=r'x ($^{\circ}$ E)',ylab=r'y ($^{\circ}$ N)',
+            Zmin=4e-10,Zmax=cmax,cmap=plt.cm.viridis,aspect='equal')
 
     if savfil:
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 

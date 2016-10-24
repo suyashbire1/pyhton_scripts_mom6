@@ -1,7 +1,7 @@
 def m6plot(data,ax=None,xticks=None,yticks=None,
         xlab=None,ylab=None,savfil=None,
         Zmax=None,Zmin=None,titl=None,cmap=None,
-        cbar=True, txt=None):
+        cbar=True, txt=None,aspect=None):
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -46,6 +46,8 @@ def m6plot(data,ax=None,xticks=None,yticks=None,
         ax.set_title(titl)
     if txt:
         ax.text(0.1,0.05,txt,transform=ax.transAxes)
+    if aspect:
+        ax.set_aspect(aspect)
 
     if savfil:
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
