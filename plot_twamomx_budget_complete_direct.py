@@ -1,12 +1,12 @@
 import sys
 import readParams_moreoptions as rdp1
 import matplotlib.pyplot as plt
-from mom_plot import m6plot
+from mom_plot1 import m6plot, xdegtokm
 import numpy as np
 from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
 
-def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
+def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
       alreadysaved=False,xyasindices=False,calledfrompv=False):
 
     if not alreadysaved:
@@ -22,8 +22,9 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
 
         fhgeo = dset(geofil)
         fh = mfdset(fil)
+        fh2 = mfdset(fil2)
         zi = rdp1.getdims(fh)[2][0]
-        dbl = -np.diff(zi)*9.8/1031
+        dbl = np.diff(zi)*9.8/1031
         if xyasindices:
             (xs,xe),(ys,ye) = (xstart,xend),(ystart,yend)
             _,_,dimu = rdp1.getdimsbyindx(fh,xs,xe,ys,ye,
@@ -44,19 +45,19 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         nt_const = dimu[0].size
         t0 = time.time()
 
-        em = fh.variables['e'][0:,zs:ze,ys:ye,xs:xe]
+        em = fh2.variables['e'][0:,zs:ze,ys:ye,xs:xe]
         elm = 0.5*(em[:,0:-1,:,:]+em[:,1:,:,:])
 
-        uh = fh.variables['uh'][0:,zs:ze,ys:ye,xs:xe]
+        uh = fh2.variables['uh'][0:,zs:ze,ys:ye,xs:xe]
         h_cu = fh.variables['h_Cu'][0:,zs:ze,ys:ye,xs:xe]
         h_um = h_cu
         utwa = uh/h_cu/dycu
 
-        uhforxdiff = fh.variables['uh'][0:,zs:ze,ys:ye,xs-1:xe]
+        uhforxdiff = fh2.variables['uh'][0:,zs:ze,ys:ye,xs-1:xe]
         h_cuforxdiff = fh.variables['h_Cu'][0:,zs:ze,ys:ye,xs-1:xe]
         utwaforxdiff = uhforxdiff/h_cuforxdiff/dycuforxdiff
 
-        uhforydiff = fh.variables['uh'][0:,zs:ze,ys-1:ye+1,xs:xe]
+        uhforydiff = fh2.variables['uh'][0:,zs:ze,ys-1:ye+1,xs:xe]
         h_cuforydiff = fh.variables['h_Cu'][0:,zs:ze,ys-1:ye+1,xs:xe]
         utwaforydiff = uhforydiff/h_cuforydiff/dycuforydiff
 
@@ -110,6 +111,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         huwbm = fh.variables['twa_huwb'][0:1,zs:ze,ys:ye,xs:xe]
         hdiffum = fh.variables['twa_hdiffu'][0:1,zs:ze,ys:ye,xs:xe]
         hdudtviscm = fh.variables['twa_hdudtvisc'][0:1,zs:ze,ys:ye,xs:xe]
+        fh2.close()
         fh.close()
 
         advx = utwa*utwax
@@ -148,14 +150,14 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
                                     X1twa[:,:,:,:,np.newaxis],
                                     X2twa[:,:,:,:,np.newaxis]),
                                     axis=4)
-        termsep = np.ma.concatenate((   xdivep1[:,:,:,:,np.newaxis],
-                                        xdivep3[:,:,:,:,np.newaxis],
-                                        xdivep4[:,:,:,:,np.newaxis],
-                                        ydivep1[:,:,:,:,np.newaxis],
-                                        ydivep3[:,:,:,:,np.newaxis],
-                                        bdivep1[:,:,:,:,np.newaxis],
-                                        bdivep3[:,:,:,:,np.newaxis],
-                                        bdivep4[:,:,:,:,np.newaxis]),
+        termsep = np.ma.concatenate((   -xdivep1[:,:,:,:,np.newaxis],
+                                        -xdivep3[:,:,:,:,np.newaxis],
+                                        -xdivep4[:,:,:,:,np.newaxis],
+                                        -ydivep1[:,:,:,:,np.newaxis],
+                                        -ydivep3[:,:,:,:,np.newaxis],
+                                        -bdivep1[:,:,:,:,np.newaxis],
+                                        -bdivep3[:,:,:,:,np.newaxis],
+                                        -bdivep4[:,:,:,:,np.newaxis]),
                                         axis=4)
 
         terms[np.isinf(terms)] = np.nan
@@ -188,44 +190,36 @@ def extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meana
         
     return (X,Y,P,Pep)
 
-def getutwaforxdiff(fh,fhgeo,D,i,xs,xe,ys,ye,zs,ze):
-    u = fh.variables['u'][i:i+1,zs:ze,ys:ye,xs:xe]
-    frhatu = fh.variables['frhatu'][i:i+1,zs:ze,ys:ye,xs:xe]
-    h_u = frhatu*D[np.newaxis,np.newaxis,:,:]
-    h_u = np.ma.masked_array(h_u,mask=(h_u<=1e-3).astype(int))
-    return ((h_u*u).filled(0), h_u.filled(0), (h_u*u*u).filled(0))
-
-def getutwaforydiff(fh,fhgeo,D,i,xs,xe,ys,ye,zs,ze):
-    u = fh.variables['u'][i:i+1,zs:ze,ys:ye,xs:xe]
-    frhatu = fh.variables['frhatu'][i:i+1,zs:ze,ys:ye,xs:xe]
-    h_u = frhatu*D[np.newaxis,np.newaxis,:,:]
-    h_u = np.ma.masked_array(h_u,mask=(h_u<=1e-3).astype(int))
-    return ((h_u*u).filled(0), h_u.filled(0))
-
-def gethvforydiff(fh,fhgeo,D,i,xs,xe,ys,ye,zs,ze):
-    v = fh.variables['v'][i:i+1,zs:ze,ys:ye,xs:xe]
-    frhatv = fh.variables['frhatv'][i:i+1,zs:ze,ys:ye,xs:xe]
-    h_v = frhatv*D[np.newaxis,np.newaxis,:,:]
-    h_v = np.ma.masked_array(h_v,mask=(h_v<=1e-3).astype(int))
-    return (h_v*v).filled(0)
-
-def plot_twamomx(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
+def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
         cmaxscalefactor = 1,cmaxscalefactorforep=1, savfil=None,savfilep=None,alreadysaved=False):
-    X,Y,P,Pep = extract_twamomx_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
+    X,Y,P,Pep = extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             alreadysaved)
     cmax = np.nanmax(np.absolute(P))*cmaxscalefactor
-    plt.figure()
+    fig = plt.figure(figsize=(12, 9))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
+    lab = [ r'$-\hat{u}\hat{u}_{\tilde{x}}$', 
+            r'$-\hat{v}\hat{u}_{\tilde{y}}$', 
+            r'$-\hat{\varpi}\hat{u}_{\tilde{b}}$', 
+            r'$f\hat{v}$', 
+            r'$-\overline{m_{\tilde{x}}}$', 
+            r"""-$\frac{1}{\overline{h}}(\widehat{u''u''}+\frac{1}{2}\overline{\zeta ' ^2})_{\tilde{x}}$""", 
+            r"""-$\frac{1}{\overline{h}}(\widehat{u''v''})_{\tilde{y}}$""",
+            r"""-$\frac{1}{\overline{h}}(\widehat{u''\varpi ''} + \overline{\zeta 'm_{\tilde{x}}'})_{\tilde{b}}$""",
+            r'$\widehat{X^H}$', 
+            r'$\widehat{X^V}$']
+
     for i in range(P.shape[-1]):
         ax = plt.subplot(5,2,i+1)
-        im = m6plot((X,Y,P[:,:,i]),ax,Zmax=cmax,titl=ti[i])
+        im = m6plot((X,Y,P[:,:,i]),ax,vmax=cmax,vmin=-cmax,
+                txt=lab[i], ylim=(-2500,0),cmap='RdBu_r')
         if i % 2:
             ax.set_yticklabels([])
         else:
-            plt.ylabel('z (m)')
+            ax.set_ylabel('z (m)')
 
         if i > 7:
-            plt.xlabel('x from EB (Deg)')
+            xdegtokm(ax,0.5*(ystart+yend))
+
         else:
             ax.set_xticklabels([])
     
@@ -233,21 +227,31 @@ def plot_twamomx(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
     else:
-        im = m6plot((X,Y,np.sum(P,axis=2)),Zmax=cmax)
+        im = m6plot((X,Y,np.sum(P,axis=2)),Zmax=cmax,cmap='RdBu_r')
         plt.show()
 
+    lab = [ r'$-\frac{(\overline{huu})_{\tilde{x}}}{\overline{h}}$',
+            r'$\frac{\hat{u}(\overline{hu})_{\tilde{x}}}{\overline{h}}$',
+            r"""$-\frac{1}{2\overline{h}}\overline{\zeta ' ^2}_{\tilde{x}}$""",
+            r'$-\frac{(\overline{huv})_{\tilde{y}}}{\overline{h}}$',
+            r'$\frac{\hat{u}(\overline{hv})_{\tilde{y}}}{\overline{h}}$',
+            r'$-\frac{(\overline{hu\varpi})_{\tilde{b}}}{\overline{h}}$',
+            r'$\frac{\hat{u}(\overline{h\varpi})_{\tilde{b}}}{\overline{h}}$',
+            r"""$-\frac{(\overline{\zeta 'm_{\tilde{x}}'})_{\tilde{b}}}{\overline{h}}$"""]
+
     cmax = np.nanmax(np.absolute(Pep))*cmaxscalefactorforep
-    plt.figure()
+    plt.figure(figsize=(12, 8))
     for i in range(Pep.shape[-1]):
         ax = plt.subplot(4,2,i+1)
-        im = m6plot((X,Y,Pep[:,:,i]),ax,Zmax=cmax,titl=ti[i])
+        im = m6plot((X,Y,Pep[:,:,i]),ax,vmax=cmax,vmin=-cmax,
+                txt=lab[i],cmap='RdBu_r', ylim=(-2500,0))
         if i % 2:
             ax.set_yticklabels([])
         else:
             plt.ylabel('z (m)')
 
         if i > 5:
-            plt.xlabel('x from EB (Deg)')
+            xdegtokm(ax,0.5*(ystart+yend))
         else:
             ax.set_xticklabels([])
     

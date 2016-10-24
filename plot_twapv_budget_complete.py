@@ -1,14 +1,14 @@
 import sys
 import readParams_moreoptions as rdp1
 import matplotlib.pyplot as plt
-from mom_plot import m6plot
+from mom_plot1 import m6plot, xdegtokm
 import numpy as np
 from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
 from plot_twamomx_budget_complete_direct import extract_twamomx_terms
 from plot_twamomy_budget_complete_direct import extract_twamomy_terms
 
-def extract_twapv_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
+def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
       alreadysaved=False):
 
     if not alreadysaved:
@@ -28,9 +28,9 @@ def extract_twapv_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         nt_const = dimq[0].size
         fhgeo.close()
         
-        xmom = extract_twamomx_terms(geofil,vgeofil,fil,xs,xe,ys,ye+1,zs,ze,(0,),
+        xmom = extract_twamomx_terms(geofil,vgeofil,fil,fil2,xs,xe,ys,ye+1,zs,ze,(0,),
                 alreadysaved=False,xyasindices=True,calledfrompv=True)[2]
-        ymom = extract_twamomy_terms(geofil,vgeofil,fil,xs,xe,ys,ye,zs,ze,(0,),
+        ymom = extract_twamomy_terms(geofil,vgeofil,fil,fil2,xs,xe,ys,ye,zs,ze,(0,),
                 alreadysaved=False,xyasindices=True,calledfrompv=True)[2]
 
         xmom = xmom[np.newaxis,:,:,:,:]
@@ -68,23 +68,46 @@ def extract_twapv_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         
     return (X,Y,P)
 
-def plot_twapv(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
-        cmaxscalefactor = 1, savfil=None,alreadysaved=False):
-    X,Y,P = extract_twapv_terms(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
+def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
+        cmaxscalefactor = 1,cmaxscalefactorforep=1, savfil=None,savfilep=None,alreadysaved=False):
+    X,Y,P = extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             alreadysaved)
     cmax = np.nanmax(np.absolute(P))*cmaxscalefactor
-    plt.figure()
+    fig = plt.figure(figsize=(12, 9))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
+    labx = [ r'$(\hat{u}\hat{u}_{\tilde{x}})_{\tilde{y}}$', 
+            r'$(\hat{v}\hat{u}_{\tilde{y}})_{\tilde{y}}$', 
+            r'$(\hat{\varpi}\hat{u}_{\tilde{b}})_{\tilde{y}}$', 
+            r'$(-f\hat{v})_{\tilde{y}}$', 
+            r'$(\overline{m_{\tilde{x}}})_{\tilde{y}}$', 
+            r"""$(\frac{1}{\overline{h}}(\widehat{u''u''}+\frac{1}{2}\overline{\zeta ' ^2})_{\tilde{x}})_{\tilde{y}}$""", 
+            r"""$(\frac{1}{\overline{h}}(\widehat{u''v''})_{\tilde{y}}$""",
+            r"""$(\frac{1}{\overline{h}}(\widehat{u''\varpi ''} + \overline{\zeta 'm_{\tilde{x}}'})_{\tilde{b}})_{\tilde{y}}$""",
+            r'$(-\widehat{X^H})_{\tilde{y}}$', 
+            r'$(-\widehat{X^V})_{\tilde{y}}$']
+    laby = [ r'$(-\hat{u}\hat{v}_{\tilde{x}})_{\tilde{x}}$', 
+            r'$(-\hat{v}\hat{v}_{\tilde{y}})_{\tilde{x}}$', 
+            r'$(-\hat{\varpi}\hat{v}_{\tilde{b}})_{\tilde{x}}$', 
+            r'$(-f\hat{u})_{\tilde{x}}$', 
+            r'$(-\overline{m_{\tilde{y}}})_{\tilde{x}}$', 
+            r"""$(-\frac{1}{\overline{h}}(\widehat{u''v''})_{\tilde{x}})_{\tilde{x}}$""", 
+            r"""$(-\frac{1}{\overline{h}}(\widehat{v''v''}+\frac{1}{2}\overline{\zeta ' ^2})_{\tilde{y}})_{\tilde{x}}$""",
+            r"""$(-\frac{1}{\overline{h}}(\widehat{v''\varpi ''} + \overline{\zeta 'm_{\tilde{y}}'})_{\tilde{b}})_{\tilde{x}}$""",
+            r'$(\widehat{Y^H})_{\tilde{x}}$', 
+            r'$(\widehat{Y^V})_{\tilde{x}}$']
+
     for i in range(P.shape[-1]):
         ax = plt.subplot(5,2,i+1)
-        im = m6plot((X,Y,P[:,:,i]),ax,Zmax=cmax,titl=ti[i])
+        im = m6plot((X,Y,P[:,:,i]),ax,vmax=cmax,vmin=-cmax,
+                txt=labx[i]+' + '+laby[i], ylim=(-2500,0),cmap='RdBu_r')
         if i % 2:
             ax.set_yticklabels([])
         else:
-            plt.ylabel('z (m)')
+            ax.set_ylabel('z (m)')
 
         if i > 7:
-            plt.xlabel('x from EB (Deg)')
+            xdegtokm(ax,0.5*(ystart+yend))
+
         else:
             ax.set_xticklabels([])
     
@@ -92,5 +115,5 @@ def plot_twapv(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
     else:
-        im = m6plot((X,Y,np.sum(P,axis=2)),Zmax=cmax)
+        im = m6plot((X,Y,np.sum(P,axis=2)),Zmax=cmax,cmap='RdBu_r')
         plt.show()

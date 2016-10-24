@@ -45,7 +45,7 @@ def m6plot(data,ax=None,xticks=None,yticks=None,
     if titl:
         ax.set_title(titl)
     if txt:
-        ax.text(0.1,0.05,txt,transform=ax.transAxes)
+        ax.text(0.05,0.9,txt,transform=ax.transAxes)
     if aspect:
         ax.set_aspect(aspect)
 
