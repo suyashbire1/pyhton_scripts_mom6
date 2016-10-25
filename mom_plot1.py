@@ -1,11 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.colors as colors
+import scipy.constants as sc
 
 def m6plot(data,ax=None,**plotkwargs):
 
     if not ax:
-        f = plt.figure()
-        ax = f.gca()
+        f = plt.figure(figsize=(8,8/sc.golden))
+        ax = f.add_subplot(111)
     
     cmap = plotkwargs.get('cmap','viridis')
     cbar = plotkwargs.get('cbar',True)
@@ -18,6 +20,7 @@ def m6plot(data,ax=None,**plotkwargs):
     vmax = plotkwargs.get('vmax',None)
     inverty = plotkwargs.get('inverty',False)
     bvnorm = plotkwargs.get('bvnorm',False)
+    blevs = plotkwargs.get('blevs',25)
     xticks = plotkwargs.get('xticks',None)
     yticks = plotkwargs.get('yticks',None)
     xlim = plotkwargs.get('xlim',None)
@@ -27,7 +30,7 @@ def m6plot(data,ax=None,**plotkwargs):
     X,Y,Z = data[0:3]
 
     if bvnorm:
-        bounds = np.linspace(vmin, vmax, 25)
+        bounds = np.linspace(vmin, vmax, blevs)
         norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
         im = ax.pcolormesh(X,Y,Z,norm=norm,cmap=cmap,shading='flat')
     else:

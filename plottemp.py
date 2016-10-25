@@ -2,8 +2,8 @@ import sys
 import readParams_moreoptions as rdp1
 from getvaratz import *
 import matplotlib.pyplot as plt
-from mom_plot import m6plot
-from netCDF4 import MFDataset as mfdset
+from mom_plot1 import m6plot
+from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
 
 def extractT(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,ts=0,te=None,
@@ -17,7 +17,7 @@ def extractT(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,ts=0,te=None,
     fh = mfdset(fil)
     (xs,xe),(ys,ye),dimh = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
             slat=ystart, nlat=yend,zs=zs,ze=ze)
-    fhgeo = mfdset(geofil)
+    fhgeo = dset(geofil)
     D = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[0]
     fhgeo.close()
     nt = dimh[0].size
@@ -41,6 +41,7 @@ def extractT(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,ts=0,te=None,
         Y = z 
         if z == None:
             z = np.linspace(-np.nanmax(D),-1,num=50)
+            Y = z
     T = getTatz(zl,z,e)
     T = (T - rho0)/drhodt
     T = np.ma.apply_over_axes(np.nanmean, T, meanax)
@@ -51,8 +52,8 @@ def extractT(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,ts=0,te=None,
     if plotit:
         Pmax = np.nanmax(P)
         Pmin = np.nanmin(P)
-        im = m6plot(data,Zmax=Pmax,Zmin=Pmin,cmap=plt.cm.Reds,
-                xlab='y (deg)',ylab='z (m)')
+        im = m6plot(data,vmax=Pmax,vmin=Pmin,title=r'T at 40N ($^{\circ}$C)',
+                xlabel=r'x ($^{\circ}$)',ylabel='z (m)',bvnorm=True,blevs=15)
         if savfil:
             plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
                         format='eps', transparent=False, bbox_inches='tight')
