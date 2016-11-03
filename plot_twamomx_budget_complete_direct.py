@@ -120,18 +120,18 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         cor = hfvm/h_um
         pfum = pfum
 
-        xdivep1 = huuxm/h_um
+        xdivep1 = -huuxm/h_um
         xdivep2 = -advx
         xdivep3 = -utwa*humx/h_um 
         xdivep4 = 0.5*edlsqmx*dbl[:,np.newaxis,np.newaxis]/h_um
         xdivep = (xdivep1 + xdivep2 + xdivep3 + xdivep4)
 
-        ydivep1 = huvym/h_um
+        ydivep1 = -huvym/h_um
         ydivep2 = -advy
         ydivep3 = -utwa*hvmy/h_um
         ydivep = (ydivep1 + ydivep2 + ydivep3)
 
-        bdivep1 = huwbm/h_um
+        bdivep1 = -huwbm/h_um
         bdivep2 = -advb
         bdivep3 = -utwa*hwb_u/h_um 
         bdivep4 = edpfudmb/h_um
@@ -202,9 +202,9 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r'$-\hat{\varpi}\hat{u}_{\tilde{b}}$', 
             r'$f\hat{v}$', 
             r'$-\overline{m_{\tilde{x}}}$', 
-            r"""-$\frac{1}{\overline{h}}(\widehat{u''u''}+\frac{1}{2}\overline{\zeta ' ^2})_{\tilde{x}}$""", 
-            r"""-$\frac{1}{\overline{h}}(\widehat{u''v''})_{\tilde{y}}$""",
-            r"""-$\frac{1}{\overline{h}}(\widehat{u''\varpi ''} + \overline{\zeta 'm_{\tilde{x}}'})_{\tilde{b}}$""",
+            r"""-$\frac{1}{\overline{h}}(\widehat{u ^{\prime \prime} u ^{\prime \prime} } +\frac{1}{2}\overline{\zeta ^{\prime 2}})_{\tilde{x}}$""", 
+            r"""-$\frac{1}{\overline{h}}(\widehat{u ^{\prime \prime} v ^{\prime \prime}})_{\tilde{y}}$""",
+            r"""-$\frac{1}{\overline{h}}(\widehat{u ^{\prime \prime} \varpi ^{\prime \prime}} + \overline{\zeta ^\prime m_{\tilde{x}}^\prime})_{\tilde{b}}$""",
             r'$\widehat{X^H}$', 
             r'$\widehat{X^V}$']
 
@@ -230,7 +230,7 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
         plt.show()
 
     if savfil:
-        im = m6plot((X,Y,np.sum(P,axis=2)),vmax=cmax,cmap='RdBu_r',ylim=(-2500,0))
+        im = m6plot((X,Y,np.sum(P,axis=2)),vmax=cmax,vmin=-cmax,cmap='RdBu_r',ylim=(-2500,0))
         plt.savefig(savfil+'res.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
     else:
@@ -238,12 +238,12 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
 
     lab = [ r'$-\frac{(\overline{huu})_{\tilde{x}}}{\overline{h}}$',
             r'$\frac{\hat{u}(\overline{hu})_{\tilde{x}}}{\overline{h}}$',
-            r"""$-\frac{1}{2\overline{h}}\overline{\zeta ' ^2}_{\tilde{x}}$""",
+            r"""$-\frac{1}{2\overline{h}}\overline{\zeta ^{\prime 2}}_{\tilde{x}}$""",
             r'$-\frac{(\overline{huv})_{\tilde{y}}}{\overline{h}}$',
             r'$\frac{\hat{u}(\overline{hv})_{\tilde{y}}}{\overline{h}}$',
             r'$-\frac{(\overline{hu\varpi})_{\tilde{b}}}{\overline{h}}$',
             r'$\frac{\hat{u}(\overline{h\varpi})_{\tilde{b}}}{\overline{h}}$',
-            r"""$-\frac{(\overline{\zeta 'm_{\tilde{x}}'})_{\tilde{b}}}{\overline{h}}$"""]
+            r"""$-\frac{(\overline{\zeta ^\prime m_{\tilde{x}}^\prime})_{\tilde{b}}}{\overline{h}}$"""]
 
     cmax = np.nanmax(np.absolute(Pep))*cmaxscalefactorforep
     plt.figure(figsize=(12, 8))

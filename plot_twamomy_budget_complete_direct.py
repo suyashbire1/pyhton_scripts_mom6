@@ -117,18 +117,18 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         cor = hmfum/h_vm
         pfvm = pfvm
 
-        xdivep1 = huvxm/h_vm
+        xdivep1 = -huvxm/h_vm
         xdivep2 = -advx
         xdivep3 = -vtwa*humx/h_vm 
         xdivep = (xdivep1 + xdivep2 + xdivep3)
 
-        ydivep1 = hvvym/h_vm
+        ydivep1 = -hvvym/h_vm
         ydivep2 = -advy
         ydivep3 = -vtwa*hvmy/h_vm
         ydivep4 = 0.5*edlsqmy*dbl[:,np.newaxis,np.newaxis]/h_vm
         ydivep = (ydivep1 + ydivep2 + ydivep3 + ydivep4)
 
-        bdivep1 = hvwbm/h_vm
+        bdivep1 = -hvwbm/h_vm
         bdivep2 = -advb
         bdivep3 = -vtwa*hwb_v/h_vm 
         bdivep4 = edpfvdmb/h_vm
@@ -199,9 +199,9 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r'$-\hat{\varpi}\hat{v}_{\tilde{b}}$', 
             r'$-f\hat{u}$', 
             r'$-\overline{m_{\tilde{y}}}$', 
-            r"""$-\frac{1}{\overline{h}}(\widehat{u''v''})_{\tilde{x}}$""", 
-            r"""$-\frac{1}{\overline{h}}(\widehat{v''v''}+\frac{1}{2}\overline{\zeta ' ^2})_{\tilde{y}}$""",
-            r"""$-\frac{1}{\overline{h}}(\widehat{v''\varpi ''} + \overline{\zeta 'm_{\tilde{y}}'})_{\tilde{b}}$""",
+            r"""$-\frac{1}{\overline{h}}(\widehat{u^{\prime \prime}v^{\prime \prime}})_{\tilde{x}}$""", 
+            r"""$-\frac{1}{\overline{h}}(\widehat{v^{\prime \prime}v^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{y}}$""",
+            r"""$-\frac{1}{\overline{h}}(\widehat{v^{\prime \prime}\varpi ^{\prime \prime}} + \overline{\zeta^\prime m_{\tilde{y}}^\prime})_{\tilde{b}}$""",
             r'$\widehat{Y^H}$', 
             r'$\widehat{Y^V}$']
 
@@ -238,10 +238,10 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r'$\frac{\hat{v}(\overline{hu})_{\tilde{x}}}{\overline{h}}$',
             r'$-\frac{(\overline{hvv})_{\tilde{y}}}{\overline{h}}$',
             r'$\frac{\hat{v}(\overline{hv})_{\tilde{y}}}{\overline{h}}$',
-            r"""-$\frac{1}{2\overline{h}}\overline{\zeta ' ^2}_{\tilde{y}}$""",
+            r"""-$\frac{1}{2\overline{h}}\overline{\zeta ^{\prime 2}}_{\tilde{y}}$""",
             r'$-\frac{(\overline{hv\varpi})_{\tilde{b}}}{\overline{h}}$',
             r'$\frac{\hat{v}(\overline{h\varpi})_{\tilde{b}}}{\overline{h}}$',
-            r"""$-\frac{(\overline{\zeta 'm_{\tilde{y}}'})_{\tilde{b}}}{\overline{h}}$"""]
+            r"""$-\frac{(\overline{\zeta^\prime m_{\tilde{y}}^\prime})_{\tilde{b}}}{\overline{h}}$"""]
 
     cmax = np.nanmax(np.absolute(Pep))*cmaxscalefactorforep
     plt.figure(figsize=(12, 8))
