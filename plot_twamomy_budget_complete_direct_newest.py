@@ -49,16 +49,19 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
 
         vh = fh2.variables['vh'][0:,zs:ze,ys:ye,xs:xe]
         h_cv = fh.variables['h_Cv'][0:,zs:ze,ys:ye,xs:xe]
+        h_cv = np.ma.masked_array(h_cv, mask=(h_cv<1e-3))
         h_vm = h_cv
         vtwa = vh/h_cv/dxcv
 
         vhforxdiff = fh2.variables['vh'][0:,zs:ze,ys:ye,xs-1:xe]
         h_cvforxdiff = fh.variables['h_Cv'][0:,zs:ze,ys:ye,xs-1:xe]
+        h_cvforxdiff = np.ma.masked_array(h_cvforxdiff, mask=(h_cvforxdiff<1e-3))
         vtwaforxdiff = vhforxdiff/h_cvforxdiff/dxcvforxdiff
-        vtwaforxdiff = np.concatenate((vtwaforxdiff,vtwaforxdiff[:,:,:,-1:]),axis=3)
+        vtwaforxdiff = np.ma.concatenate((vtwaforxdiff,vtwaforxdiff[:,:,:,-1:]),axis=3)
 
         vhforydiff = fh2.variables['vh'][0:,zs:ze,ys-1:ye+1,xs:xe]
         h_cvforydiff = fh.variables['h_Cv'][0:,zs:ze,ys-1:ye+1,xs:xe]
+        h_cvforydiff = np.ma.masked_array(h_cvforydiff, mask=(h_cvforydiff<1e-3))
         vtwaforydiff = vhforydiff/h_cvforydiff/dxcvforydiff
 
         vtwax = np.diff(vtwaforxdiff,axis=3)/dxbu
@@ -76,33 +79,37 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         humx = np.diff(humforxdiff,axis=3)/dxbu
         humx = 0.5*(humx[:,:,:,:-1] + humx[:,:,:,1:])
 
-        huvxphvvym = fh.variables['twa_huvxpt'][0:,zs:ze,ys:ye,xs:xe] + fh.variables['twa_hvvymt'][0:,zs:ze,ys:ye,xs:xe]
-        hvv = fh.variables['hvv_Cv'][0:,zs:ze,ys-1:ye+1,xs:xe]
-        hvvym = np.diff(hvv,axis=2)/dyt
-        hvvym = 0.5*(hvvym[:,:,:-1,:] + hvvym[:,:,1:,:])
+        huvxphvvym = fh.variables['twa_huvxpt'][0:,zs:ze,ys:ye,xs:xe] +
+        fh.variables['twa_hvvymt'][0:,zs:ze,ys:ye,xs:xe]
+        hvv = fh.variables['hvv_T'][0:,zs:ze,ys:ye+1,xs:xe]
+        hvvym = np.diff(hvv,axis=2)/dycv
         huvxm = huvxphvvym - hvvym
 
-        vtwaforvdiff = np.concatenate((vtwa[:,[0],:,:],vtwa),axis=1)
+        vtwaforvdiff = np.ma.concatenate((vtwa[:,[0],:,:],vtwa),axis=1)
         vtwab = np.diff(vtwaforvdiff,axis=1)/db[:,np.newaxis,np.newaxis]
-        vtwab = np.concatenate((vtwab,np.zeros([vtwab.shape[0],1,vtwab.shape[2],vtwab.shape[3]])),axis=1)
+        vtwab = np.ma.concatenate((vtwab,np.zeros([vtwab.shape[0],1,vtwab.shape[2],vtwab.shape[3]])),axis=1)
         vtwab = 0.5*(vtwab[:,0:-1,:,:] + vtwab[:,1:,:,:])
 
         hwb_v = fh.variables['hwb_Cv'][0:,zs:ze,ys:ye,xs:xe]
         hwm_v = fh.variables['hw_Cv'][0:,zs:ze,ys:ye,xs:xe]
 
-        esq = fh.variables['esq_Cv'][0:,zs:ze,ys-1:ye+1,xs:xe]
-        ecv = fh.variables['e_Cv'][0:,zs:ze,ys-1:ye+1,xs:xe]
-        edlsqm = (esq - ecv**2)
-        edlsqmy = np.diff(edlsqm,axis=2)/dyt
-        edlsqmy = 0.5*(edlsqmy[:,:,:-1,:] + edlsqmy[:,:,1:,:])
+        esq = fh.variables['esq'][0:,zs:ze,ys:ye+1,xs:xe]
+        emforydiff = fh.variables['e'][0:,zs:ze,ys:ye+1,xs:xe]
+        elmforydiff = 0.5*(emforydiff[:,0:-1,:,:]+emforydiff[:,1:,:,:])
+        edlsqm = (esq - elmforydiff**2)
+        edlsqmy = np.diff(edlsqm,axis=2)/dycv
 
-        epfv = fh.variables['epfv'][0:,zs:ze,ys:ye,xs:xe]
-        ecv = fh.variables['e_Cv'][0:,zs:ze,ys:ye,xs:xe]
+        hpfv = fh.variables['twa_hpfv'][0:,zs:ze,ys:ye,xs:xe]
         pfvm = fh.variables['pfv_masked'][0:,zs:ze,ys:ye,xs:xe]
-        edpfvdm = epfv - pfvm*ecv
-        edpfvdmb = np.diff(edpfvdm,axis=1)
-        edpfvdmb = np.concatenate((edpfvdmb[:,:1,:,:],edpfvdmb,edpfvdmb[:,-1:,:,:]),axis=1)
-        edpfvdmb = 0.5*(edpfvdmb[:,:-1,:,:] + edpfvdmb[:,1:,:,:])
+        edpfvdmb = -hpfv + h_cv*pfvm - 0.5*edlsqmy*dbl[:,np.newaxis,np.newaxis]
+
+#        epfv = fh.variables['epfv'][0:,zs:ze,ys:ye,xs:xe]
+#        ecv = fh.variables['e_Cv'][0:,zs:ze,ys:ye,xs:xe]
+#        pfvm = fh.variables['pfv_masked'][0:,zs:ze,ys:ye,xs:xe]
+#        edpfvdm = epfv - pfvm*ecv
+#        edpfvdmb = np.diff(edpfvdm,axis=1)
+#        edpfvdmb = np.concatenate((edpfvdmb[:,:1,:,:],edpfvdmb,edpfvdmb[:,-1:,:,:]),axis=1)
+#        edpfvdmb = 0.5*(edpfvdmb[:,:-1,:,:] + edpfvdmb[:,1:,:,:])
 
         hmfum = fh.variables['twa_hmfu'][0:1,zs:ze,ys:ye,xs:xe]
         hvwbm = fh.variables['twa_hvwb'][0:1,zs:ze,ys:ye,xs:xe]

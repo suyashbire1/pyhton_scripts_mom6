@@ -77,35 +77,39 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         hvmy = np.diff(hv_cu,axis=2)/dyt1
         hvmy = 0.5*(hvmy[:,:,:-1,:] + hvmy[:,:,1:,:])
 
-        huuxphuvym = fh.variables['twa_huuxpt'][0:,zs:ze,ys:ye,xs:xe] + fh.variables['twa_huvymt'][0:,zs:ze,ys:ye,xs:xe]
-        huu = fh.variables['huu_Cu'][0:,zs:ze,ys:ye,xs-1:xe].filled(0)
+        huuxphuvym = (fh.variables['twa_huuxpt'][0:,zs:ze,ys:ye,xs:xe] +
+                fh.variables['twa_huvymt'][0:,zs:ze,ys:ye,xs:xe])
+        huu = fh.variables['huu_T'][0:,zs:ze,ys:ye,xs:xe]
+        huu = np.concatenate((huu,-huu[:,:,:,-1:]),axis=3)
         huuxm = np.diff(huu,axis=3)/dxt
-        huuxm = np.concatenate((huuxm,-huuxm[:,:,:,-1:]),axis=3)
-        huuxm = 0.5*(huuxm[:,:,:,:-1] + huuxm[:,:,:,1:])
         huvym = huuxphuvym - huuxm
 
         utwaforvdiff = np.concatenate((utwa[:,[0],:,:],utwa),axis=1)
         utwab = np.diff(utwaforvdiff,axis=1)/db[:,np.newaxis,np.newaxis]
-        utwab = np.concatenate((utwab,np.zeros([utwab.shape[0],1,utwab.shape[2],utwab.shape[3]])),axis=1)
+        utwab = np.concatenate((utwab,np.zeros(utwab[:,:1,:,:].shape)),axis=1)
         utwab = 0.5*(utwab[:,0:-1,:,:] + utwab[:,1:,:,:])
 
         hwb_u = fh.variables['hwb_Cu'][0:,zs:ze,ys:ye,xs:xe]
         hwm_u = fh.variables['hw_Cu'][0:,zs:ze,ys:ye,xs:xe]
 
-        esq = fh.variables['esq_Cu'][0:,zs:ze,ys:ye,xs-1:xe].filled(0)
-        ecu = fh.variables['e_Cu'][0:,zs:ze,ys:ye,xs-1:xe].filled(0)
-        edlsqm = (esq - ecu**2)
-        edlsqmx = np.diff(edlsqm,axis=3)/dxt
-        edlsqmx = np.concatenate((edlsqmx,-edlsqmx[:,:,:,[-1]]),axis=3)
-        edlsqmx = 0.5*(edlsqmx[:,:,:,:-1] + edlsqmx[:,:,:,1:])
+        esq = fh.variables['esq'][0:,zs:ze,ys:ye,xs:xe]
+        edlsqm = (esq - elm**2)
+        vmax = np.percentile(edlsqm,[3,97])
+#        edlsqm = np.ma.masked_array(edlsqm,mask=(edlsqm<vmax[0]))
+        edlsqm1 = np.ma.concatenate((edlsqm,edlsqm[:,:,:,-1:]),axis=3)
+        edlsqmx = np.diff(edlsqm1,axis=3)/dxcu
 
-        epfu = fh.variables['epfu'][0:,zs:ze,ys:ye,xs:xe]
-        ecu = fh.variables['e_Cu'][0:,zs:ze,ys:ye,xs:xe]
+        hpfu = fh.variables['twa_hpfu'][0:,zs:ze,ys:ye,xs:xe]
         pfum = fh.variables['pfu_masked'][0:,zs:ze,ys:ye,xs:xe]
-        edpfudm = epfu - pfum*ecu
-        edpfudmb = np.diff(edpfudm,axis=1)
-        edpfudmb = np.concatenate((edpfudmb[:,:1,:,:],edpfudmb,edpfudmb[:,-1:,:,:]),axis=1)
-        edpfudmb = 0.5*(edpfudmb[:,:-1,:,:] + edpfudmb[:,1:,:,:])
+        edpfudmb = -hpfu + h_cu*pfum - 0.5*edlsqmx*dbl[:,np.newaxis,np.newaxis]
+
+#        epfu = fh.variables['epfu'][0:,zs:ze,ys:ye,xs:xe]
+#        ecu = fh.variables['e_Cu'][0:,zs:ze,ys:ye,xs:xe]
+#        pfum = fh.variables['pfu_masked'][0:,zs:ze,ys:ye,xs:xe]
+#        edpfudm = epfu - pfum*ecu
+#        edpfudmb = np.diff(edpfudm,axis=1)
+#        edpfudmb = np.concatenate((edpfudmb[:,:1,:,:],edpfudmb,edpfudmb[:,-1:,:,:]),axis=1)
+#        edpfudmb = 0.5*(edpfudmb[:,:-1,:,:] + edpfudmb[:,1:,:,:])
 
         hfvm = fh.variables['twa_hfv'][0:1,zs:ze,ys:ye,xs:xe]
         huwbm = fh.variables['twa_huwb'][0:1,zs:ze,ys:ye,xs:xe]
@@ -191,38 +195,42 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
     return (X,Y,P,Pep)
 
 def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
-        cmaxscalefactor = 1,cmaxscalefactorforep=1, savfil=None,savfilep=None,alreadysaved=False):
-    X,Y,P,Pep = extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
-            alreadysaved)
-    cmax = np.nanmax(np.absolute(P))*cmaxscalefactor
-    fig = plt.figure(figsize=(12, 9))
+        cmaxpercfactor = 1,cmaxpercfactorforep=1, 
+        savfil=None,savfilep=None,alreadysaved=False):
+    X,Y,P,Pep = extract_twamomx_terms(geofil,vgeofil,fil,fil2,
+                                        xstart,xend,ystart,yend,zs,ze,
+                                        meanax, alreadysaved)
+    P = np.ma.masked_array(P,mask=np.isnan(P))
+    cmax = np.nanpercentile(P,[cmaxpercfactor,100-cmaxpercfactor])
+    cmax = np.max(np.fabs(cmax))
+    fig,ax = plt.subplots(np.int8(np.ceil(P.shape[-1]/2)),2,
+                          sharex=True,sharey=True,figsize=(12, 9))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
-    lab = [ r'$-\hat{u}\hat{u}_{\tilde{x}}$', 
-            r'$-\hat{v}\hat{u}_{\tilde{y}}$', 
-            r'$-\hat{\varpi}\hat{u}_{\tilde{b}}$', 
-            r'$f\hat{v}$', 
-            r'$-\overline{m_{\tilde{x}}}$', 
-            r"""-$\frac{1}{\overline{h}}(\widehat{u ^{\prime \prime} u ^{\prime \prime} } +\frac{1}{2}\overline{\zeta ^{\prime 2}})_{\tilde{x}}$""", 
+    lab = [ r'$-\hat{u}\hat{u}_{\tilde{x}}$',
+            r'$-\hat{v}\hat{u}_{\tilde{y}}$',
+            r'$-\hat{\varpi}\hat{u}_{\tilde{b}}$',
+            r'$f\hat{v}$',
+            r'$-\overline{m_{\tilde{x}}}$',
+            r"""-$\frac{1}{\overline{h}}(\widehat{u ^{\prime \prime} u ^{\prime \prime} } +\frac{1}{2}\overline{\zeta ^{\prime 2}})_{\tilde{x}}$""",
             r"""-$\frac{1}{\overline{h}}(\widehat{u ^{\prime \prime} v ^{\prime \prime}})_{\tilde{y}}$""",
             r"""-$\frac{1}{\overline{h}}(\widehat{u ^{\prime \prime} \varpi ^{\prime \prime}} + \overline{\zeta ^\prime m_{\tilde{x}}^\prime})_{\tilde{b}}$""",
-            r'$\widehat{X^H}$', 
+            r'$\widehat{X^H}$',
             r'$\widehat{X^V}$']
 
     for i in range(P.shape[-1]):
-        ax = plt.subplot(5,2,i+1)
-        im = m6plot((X,Y,P[:,:,i]),ax,vmax=cmax,vmin=-cmax,
-                txt=lab[i], ylim=(-2500,0),cmap='RdBu_r')
-        if i % 2:
-            ax.set_yticklabels([])
-        else:
-            ax.set_ylabel('z (m)')
-
-        if i > 7:
-            xdegtokm(ax,0.5*(ystart+yend))
-
-        else:
-            ax.set_xticklabels([])
-    
+        axc = ax.ravel()[i]
+        im = m6plot((X,Y,P[:,:,i]),axc,vmax=cmax,vmin=-cmax,
+                txt=lab[i], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
+        
+        if i % 2 == 0:
+            axc.set_ylabel('z (m)')
+        if i > np.size(ax)-3:
+            xdegtokm(axc,0.5*(ystart+yend))
+            
+    fig.tight_layout()
+    cb = fig.colorbar(im, ax=ax.ravel().tolist())
+    cb.formatter.set_powerlimits((0, 0))
+    cb.update_ticks() 
     if savfil:
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
@@ -236,6 +244,10 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
     else:
         plt.show()
 
+    Pep = np.ma.masked_array(Pep,mask=np.isnan(Pep))
+    cmax = np.nanpercentile(Pep,[cmaxpercfactorforep,100-cmaxpercfactorforep])
+    cmax = np.max(np.fabs(cmax))
+
     lab = [ r'$-\frac{(\overline{huu})_{\tilde{x}}}{\overline{h}}$',
             r'$\frac{\hat{u}(\overline{hu})_{\tilde{x}}}{\overline{h}}$',
             r"""$-\frac{1}{2\overline{h}}\overline{\zeta ^{\prime 2}}_{\tilde{x}}$""",
@@ -245,21 +257,21 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r'$\frac{\hat{u}(\overline{h\varpi})_{\tilde{b}}}{\overline{h}}$',
             r"""$-\frac{(\overline{\zeta ^\prime m_{\tilde{x}}^\prime})_{\tilde{b}}}{\overline{h}}$"""]
 
-    cmax = np.nanmax(np.absolute(Pep))*cmaxscalefactorforep
-    plt.figure(figsize=(12, 8))
+    fig,ax = plt.subplots(np.int8(np.ceil(Pep.shape[-1]/2)),2,sharex=True,sharey=True,figsize=(12, 9))
     for i in range(Pep.shape[-1]):
-        ax = plt.subplot(4,2,i+1)
-        im = m6plot((X,Y,Pep[:,:,i]),ax,vmax=cmax,vmin=-cmax,
-                txt=lab[i],cmap='RdBu_r', ylim=(-2500,0))
-        if i % 2:
-            ax.set_yticklabels([])
-        else:
-            plt.ylabel('z (m)')
+        axc = ax.ravel()[i]
+        im = m6plot((X,Y,Pep[:,:,i]),axc,vmax=cmax,vmin=-cmax,
+                txt=lab[i],cmap='RdBu_r', ylim=(-2500,0),cbar=False)
+        if i % 2 == 0:
+            axc.set_ylabel('z (m)')
 
-        if i > 5:
-            xdegtokm(ax,0.5*(ystart+yend))
-        else:
-            ax.set_xticklabels([])
+        if i > np.size(ax)-3:
+            xdegtokm(axc,0.5*(ystart+yend))
+            
+    fig.tight_layout()
+    cb = fig.colorbar(im, ax=ax.ravel().tolist())
+    cb.formatter.set_powerlimits((0, 0))
+    cb.update_ticks()
     
     if savfilep:
         plt.savefig(savfilep+'.eps', dpi=300, facecolor='w', edgecolor='w', 
