@@ -69,11 +69,13 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
     return (X,Y,P)
 
 def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
-        cmaxscalefactor = 1,cmaxscalefactorforep=1, savfil=None,savfilep=None,alreadysaved=False):
+        cmaxpercfactor = 1,cmaxpercfactorforep=1, savfil=None,savfilep=None,alreadysaved=False):
     X,Y,P = extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             alreadysaved)
-    cmax = np.nanmax(np.absolute(P))*cmaxscalefactor
-    fig = plt.figure(figsize=(12, 9))
+    cmax = np.nanpercentile(P,[cmaxpercfactor,100-cmaxpercfactor])
+    cmax = np.max(np.fabs(cmax))
+    fig,ax = plt.subplots(np.int8(np.ceil(P.shape[-1]/2)),2,
+                          sharex=True,sharey=True,figsize=(12, 9))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
     labx = [ r'$(\hat{u}\hat{u}_{\tilde{x}})_{\tilde{y}}$', 
             r'$(\hat{v}\hat{u}_{\tilde{y}})_{\tilde{y}}$', 
@@ -95,25 +97,30 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r"""$(-\frac{1}{\overline{h}}(\widehat{v''\varpi ''} + \overline{\zeta 'm_{\tilde{y}}'})_{\tilde{b}})_{\tilde{x}}$""",
             r'$(\widehat{Y^H})_{\tilde{x}}$', 
             r'$(\widehat{Y^V})_{\tilde{x}}$']
-
     for i in range(P.shape[-1]):
-        ax = plt.subplot(5,2,i+1)
+        axc = ax.ravel()[i]
         im = m6plot((X,Y,P[:,:,i]),ax,vmax=cmax,vmin=-cmax,
-                txt=labx[i]+' + '+laby[i], ylim=(-2500,0),cmap='RdBu_r')
-        if i % 2:
-            ax.set_yticklabels([])
-        else:
-            ax.set_ylabel('z (m)')
-
-        if i > 7:
-            xdegtokm(ax,0.5*(ystart+yend))
-
-        else:
-            ax.set_xticklabels([])
-    
+                txt=labx[i]+' + '+laby[i], ylim=(-2500,0),
+                cmap='RdBu_r', cbar=False)
+        
+        if i % 2 == 0:
+            axc.set_ylabel('z (m)')
+        if i > np.size(ax)-3:
+            xdegtokm(axc,0.5*(ystart+yend))
+            
+    fig.tight_layout()
+    cb = fig.colorbar(im, ax=ax.ravel().tolist())
+    cb.formatter.set_powerlimits((0, 0))
+    cb.update_ticks() 
     if savfil:
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
     else:
-        im = m6plot((X,Y,np.sum(P,axis=2)),Zmax=cmax,cmap='RdBu_r')
+        plt.show()
+
+    if savfil:
+        im = m6plot((X,Y,np.sum(P,axis=2)),vmax=cmax,vmin=-cmax,cmap='RdBu_r',ylim=(-2500,0))
+        plt.savefig(savfil+'res.eps', dpi=300, facecolor='w', edgecolor='w', 
+                    format='eps', transparent=False, bbox_inches='tight')
+    else:
         plt.show()
