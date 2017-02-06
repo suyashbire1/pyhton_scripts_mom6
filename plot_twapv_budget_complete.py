@@ -99,7 +99,7 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r'$(\widehat{Y^V})_{\tilde{x}}$']
     for i in range(P.shape[-1]):
         axc = ax.ravel()[i]
-        im = m6plot((X,Y,P[:,:,i]),ax,vmax=cmax,vmin=-cmax,
+        im = m6plot((X,Y,P[:,:,i]),axc,vmax=cmax,vmin=-cmax,
                 txt=labx[i]+' + '+laby[i], ylim=(-2500,0),
                 cmap='RdBu_r', cbar=False)
         
