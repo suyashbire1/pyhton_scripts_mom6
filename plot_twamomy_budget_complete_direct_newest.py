@@ -195,11 +195,16 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
     return (X,Y,P,Pep)
 
 def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
-        cmaxscalefactor = 1,cmaxscalefactorforep=1, savfil=None,savfilep=None,alreadysaved=False):
-    X,Y,P,Pep = extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
-            alreadysaved)
-    cmax = np.nanmax(np.absolute(P))*cmaxscalefactor
-    fig = plt.figure(figsize=(12, 9))
+        cmaxpercfactor = 1,cmaxpercfactorforep=1, 
+        savfil=None,savfilep=None,alreadysaved=False):
+    X,Y,P,Pep = extract_twamomy_terms(geofil,vgeofil,fil,fil2,
+                                        xstart,xend,ystart,yend,zs,ze,
+                                        meanax, alreadysaved)
+    P = np.ma.masked_array(P,mask=np.isnan(P))
+    cmax = np.nanpercentile(P,[cmaxpercfactor,100-cmaxpercfactor])
+    cmax = np.max(np.fabs(cmax))
+    fig,ax = plt.subplots(np.int8(np.ceil(P.shape[-1]/2)),2,
+                          sharex=True,sharey=True,figsize=(12, 9))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
     lab = [ r'$-\hat{u}\hat{v}_{\tilde{x}}$', 
             r'$-\hat{v}\hat{v}_{\tilde{y}}$', 
@@ -212,21 +217,21 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r'$\widehat{Y^H}$', 
             r'$\widehat{Y^V}$']
 
+
     for i in range(P.shape[-1]):
-        ax = plt.subplot(5,2,i+1)
-        im = m6plot((X,Y,P[:,:,i]),ax,vmax=cmax,vmin=-cmax,
-                txt=lab[i], ylim=(-2500,0),cmap='RdBu_r')
-        if i % 2:
-            ax.set_yticklabels([])
-        else:
-            ax.set_ylabel('z (m)')
-
-        if i > 7:
-            xdegtokm(ax,0.5*(ystart+yend))
-
-        else:
-            ax.set_xticklabels([])
-    
+        axc = ax.ravel()[i]
+        im = m6plot((X,Y,P[:,:,i]),axc,vmax=cmax,vmin=-cmax,
+                txt=lab[i], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
+        
+        if i % 2 == 0:
+            axc.set_ylabel('z (m)')
+        if i > np.size(ax)-3:
+            xdegtokm(axc,0.5*(ystart+yend))
+            
+    fig.tight_layout()
+    cb = fig.colorbar(im, ax=ax.ravel().tolist())
+    cb.formatter.set_powerlimits((0, 0))
+    cb.update_ticks() 
     if savfil:
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
@@ -239,7 +244,10 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
                     format='eps', transparent=False, bbox_inches='tight')
     else:
         plt.show()
-        
+
+    Pep = np.ma.masked_array(Pep,mask=np.isnan(Pep))
+    cmax = np.nanpercentile(Pep,[cmaxpercfactorforep,100-cmaxpercfactorforep])
+    cmax = np.max(np.fabs(cmax))
 
     lab = [ r'$-\frac{(\overline{huv})_{\tilde{x}}}{\overline{h}}$',
             r'$\frac{\hat{v}(\overline{hu})_{\tilde{x}}}{\overline{h}}$',
@@ -250,21 +258,22 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r'$\frac{\hat{v}(\overline{h\varpi})_{\tilde{b}}}{\overline{h}}$',
             r"""$-\frac{(\overline{\zeta^\prime m_{\tilde{y}}^\prime})_{\tilde{b}}}{\overline{h}}$"""]
 
-    cmax = np.nanmax(np.absolute(Pep))*cmaxscalefactorforep
-    plt.figure(figsize=(12, 8))
-    for i in range(Pep.shape[-1]):
-        ax = plt.subplot(4,2,i+1)
-        im = m6plot((X,Y,Pep[:,:,i]),ax,vmax=cmax,vmin=-cmax,
-                txt=lab[i],cmap='RdBu_r', ylim=(-2500,0))
-        if i % 2:
-            ax.set_yticklabels([])
-        else:
-            plt.ylabel('z (m)')
 
-        if i > 5:
-            xdegtokm(ax,0.5*(ystart+yend))
-        else:
-            ax.set_xticklabels([])
+    fig,ax = plt.subplots(np.int8(np.ceil(Pep.shape[-1]/2)),2,sharex=True,sharey=True,figsize=(12, 9))
+    for i in range(Pep.shape[-1]):
+        axc = ax.ravel()[i]
+        im = m6plot((X,Y,Pep[:,:,i]),axc,vmax=cmax,vmin=-cmax,
+                txt=lab[i],cmap='RdBu_r', ylim=(-2500,0),cbar=False)
+        if i % 2 == 0:
+            axc.set_ylabel('z (m)')
+
+        if i > np.size(ax)-3:
+            xdegtokm(axc,0.5*(ystart+yend))
+            
+    fig.tight_layout()
+    cb = fig.colorbar(im, ax=ax.ravel().tolist())
+    cb.formatter.set_powerlimits((0, 0))
+    cb.update_ticks()
     
     if savfilep:
         plt.savefig(savfilep+'.eps', dpi=300, facecolor='w', edgecolor='w', 
