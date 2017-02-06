@@ -5,8 +5,8 @@ from mom_plot1 import m6plot, xdegtokm
 import numpy as np
 from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
-from plot_twamomx_budget_complete_direct import extract_twamomx_terms
-from plot_twamomy_budget_complete_direct import extract_twamomy_terms
+from plot_twamomx_budget_complete_direct_newest import extract_twamomx_terms
+from plot_twamomy_budget_complete_direct_newest import extract_twamomy_terms
 
 def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
       alreadysaved=False):
