@@ -79,8 +79,8 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         humx = np.diff(humforxdiff,axis=3)/dxbu
         humx = 0.5*(humx[:,:,:,:-1] + humx[:,:,:,1:])
 
-        huvxphvvym = fh.variables['twa_huvxpt'][0:,zs:ze,ys:ye,xs:xe] +
-        fh.variables['twa_hvvymt'][0:,zs:ze,ys:ye,xs:xe]
+        huvxphvvym = (fh.variables['twa_huvxpt'][0:,zs:ze,ys:ye,xs:xe] +
+                fh.variables['twa_hvvymt'][0:,zs:ze,ys:ye,xs:xe])
         hvv = fh.variables['hvv_T'][0:,zs:ze,ys:ye+1,xs:xe]
         hvvym = np.diff(hvv,axis=2)/dycv
         huvxm = huvxphvvym - hvvym
