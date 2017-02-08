@@ -38,8 +38,8 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
         h_cv = np.ma.masked_array(h_cv,mask=(h_cv<1e-3))
         dxcv = fhgeo.variables['dxCv'][sl[2:]]
         vtwa = vh/dxcv/h_cv
-        vtwa = np.concatenate((vtwa,-vtwa[:,:,:-1:]),axis=3)
-        h_cv = np.concatenate((h_cv,h_cv[:,:,:-1:]),axis=3)
+        vtwa = np.concatenate((vtwa,-vtwa[:,:,:,-1:]),axis=3)
+        h_cv = np.concatenate((h_cv,h_cv[:,:,:,-1:]),axis=3)
 
         return h_cu, h_cv, utwa, vtwa
 

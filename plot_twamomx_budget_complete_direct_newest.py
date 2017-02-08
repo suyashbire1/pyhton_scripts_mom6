@@ -50,15 +50,18 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
 
         uh = fh2.variables['uh'][0:,zs:ze,ys:ye,xs:xe]
         h_cu = fh.variables['h_Cu'][0:,zs:ze,ys:ye,xs:xe]
+        h_cu = np.ma.masked_array(h_cu, mask = (h_cu<1e-3))
         h_um = h_cu
         utwa = uh/h_cu/dycu
 
         uhforxdiff = fh2.variables['uh'][0:,zs:ze,ys:ye,xs-1:xe]
         h_cuforxdiff = fh.variables['h_Cu'][0:,zs:ze,ys:ye,xs-1:xe]
+        h_cuforxdiff = np.ma.masked_array(h_cuforxdiff, mask = (h_cuforxdiff<1e-3))
         utwaforxdiff = uhforxdiff/h_cuforxdiff/dycuforxdiff
 
         uhforydiff = fh2.variables['uh'][0:,zs:ze,ys-1:ye+1,xs:xe]
         h_cuforydiff = fh.variables['h_Cu'][0:,zs:ze,ys-1:ye+1,xs:xe]
+        h_cuforydiff = np.ma.masked_array(h_cuforydiff, mask = (h_cuforydiff<1e-3))
         utwaforydiff = uhforydiff/h_cuforydiff/dycuforydiff
 
         utwax = np.diff(utwaforxdiff.filled(0),axis=3)/dxt
