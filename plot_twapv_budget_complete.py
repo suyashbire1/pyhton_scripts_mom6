@@ -29,7 +29,15 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         f = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[-1]
         nt_const = dimq[0].size
         fhgeo.close()
-        
+
+        h_cu, h_cv, utwa, vtwa = getuv(geofil,vgeofil,fil,fil2,
+                xs,xe, ys,ye,zs,ze,meanax,xyasindices = True)
+        h_q = 0.25*(h_cu[:,:,:-1,:] + h_cu[:,:,1:,:] +
+                h_cv[:,:,:,:-1] + h_cv[:,:,:,1:])
+        h_q = np.ma.masked_array(h_q, mask=(h_q<1e-3))
+        pvhash = (f -np.diff(utwa,axis=2)/dybu +
+                np.diff(vtwa,axis=3)/dxbu)/h_q
+
         xmom = extract_twamomx_terms(geofil,vgeofil,fil,fil2,xs,xe,ys,ye+1,zs,ze,(0,),
                 alreadysaved=False,xyasindices=True,calledfrompv=True)[2]
         ymom = extract_twamomy_terms(geofil,vgeofil,fil,fil2,xs,xe,ys,ye,zs,ze,(0,),
@@ -39,18 +47,13 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         ymom = ymom[np.newaxis,:,:,:,:]
         ymom = np.concatenate((ymom,-ymom[:,:,:,-1:]),axis=3)
 
+        bxppvflx = np.sum(xmom[:,:,:,:,[0,1,3,4]],axis=4)
+        byppvflx = np.sum(ymom[:,:,:,:,[0,1,3,4]],axis=4)
+
         pv = -np.diff(xmom,axis=2)/dybu[:,:,np.newaxis] + np.diff(ymom,axis=3)/dxbu[:,:,np.newaxis]
         pvmask = np.zeros(pv.shape,dtype=np.int8)
         pvmask[:,:,:,-1:] = 1
         pv = np.ma.masked_array(pv, mask=(pvmask==1))
-
-        h_cu, h_cv, utwa, vtwa = getuv(geofil,vgeofil,fil,fil2,
-                xs,xe, ys,ye,zs,ze,meanax,xyasindices = True)
-        h_q = 0.25*(h_cu[:,:,:-1,:] + h_cu[:,:,1:,:] +
-                h_cv[:,:,:,:-1] + h_cv[:,:,:,1:])
-        h_q = np.ma.masked_array(h_q, mask=(h_q<1e-3))
-        pvhash = (f -np.diff(utwa,axis=2)/dybu +
-                np.diff(vtwa,axis=3)/dxbu)/h_q
 
         pv = np.ma.apply_over_axes(np.nanmean, pv, meanax)
         pvhash = np.ma.apply_over_axes(np.nanmean, pvhash, meanax)
