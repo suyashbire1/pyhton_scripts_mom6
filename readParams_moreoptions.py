@@ -69,6 +69,10 @@ def getgeombyindx(fhgeo,xs,xe,ys,ye):
     f = fhgeo.variables['f'][ys:ye,xs:xe]
     return D, (ah,aq), (dxcu,dycu,dxcv,dycv,dxbu,dybu,dxt,dyt), f
 
+def getgeombyindx2(fhgeo,var,sl):
+    """ This function returns the var along a the slice sl"""
+    return fhgeo.variables[var][sl[2:]]
+
 def getdims(fh):
     """
     Usage:
@@ -151,6 +155,23 @@ def getlatlonindx(fh,wlon=-25,elon=0,slat=10,nlat=60,
     ry = y[ys:ye]
     return (xs,xe),(ys,ye),(rt,rz,ry,rx)
 
+def getslice(fh,wlon=-25,elon=0,slat=10,nlat=60,
+        zs=0,ze=None,ts=0,te=None,xhxq='xh',yhyq='yh',zlzi='zl'):
+    (xh,yh), (xq,yq), (zi,zl,zlremap), time = getdims(fh)
+    x = eval(xhxq)
+    y = eval(yhyq)
+    z = eval(zlzi)
+    xs = (x >= wlon).nonzero()[0][0]
+    xe = (x <= elon).nonzero()[0][-1]+1
+    ys = (y >= slat).nonzero()[0][0]
+    ye = (y <= nlat).nonzero()[0][-1]+1
+    rz = z[zs:ze]
+    rt = time[ts:te]
+    rx = x[xs:xe]
+    ry = y[ys:ye]
+    slc = np.s_[ts:te, zs:ze, ys:ye, xs:xe]
+    return slc, (rt,rz,ry,rx)
+
 def getdimsbyindx(fh,xs,xe,ys,ye,
         zs=0,ze=None,ts=0,te=None,xhxq='xh',yhyq='yh',zlzi='zl'):
     (xh,yh), (xq,yq), (zi,zl,zlremap), time = getdims(fh)
@@ -162,3 +183,16 @@ def getdimsbyindx(fh,xs,xe,ys,ye,
     rx = x[xs:xe]
     ry = y[ys:ye]
     return (xs,xe),(ys,ye),(rt,rz,ry,rx)
+
+def getslicesbyindx(fh,xs,xe,ys,ye,
+        zs=0,ze=None,ts=0,te=None,xhxq='xh',yhyq='yh',zlzi='zl'):
+    (xh,yh), (xq,yq), (zi,zl,zlremap), time = getdims(fh)
+    x = eval(xhxq)
+    y = eval(yhyq)
+    z = eval(zlzi)
+    rz = z[zs:ze]
+    rt = time[ts:te]
+    rx = x[xs:xe]
+    ry = y[ys:ye]
+    slc = np.s_[ts:te, zs:ze, ys:ye, xs:xe]
+    return slc, (rt,rz,ry,rx)
