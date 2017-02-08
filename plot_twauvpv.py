@@ -25,6 +25,24 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
     if xyasindices:
         (xs,xe),(ys,ye) = (xstart,xend),(ystart,yend)
         sl = np.s_[:,zs:ze,ys:ye,xs:xe]
+        slpy = np.s_[:,zs:ze,ys:ye+1,xs:xe]
+
+        uh = fh2.variables['uh'][slpy]
+        h_cu = fh.variables['h_Cu'][slpy]
+        h_cu = np.ma.masked_array(h_cu,mask=(h_cu<1e-3))
+        dycu = fhgeo.variables['dyCu'][slpy[2:]]
+        utwa = uh/h_cu/dycu
+
+        vh = fh2.variables['vh'][sl]
+        h_cv = fh.variables['h_Cv'][sl]
+        h_cv = np.ma.masked_array(h_cv,mask=(h_cv<1e-3))
+        dxcv = fhgeo.variables['dxCv'][sl[2:]]
+        vtwa = vh/dxcv/h_cv
+        vtwa = np.concatenate((vtwa,-vtwa[:,:,:-1:]),axis=3)
+        h_cv = np.concatenate((h_cv,h_cv[:,:,:-1:]),axis=3)
+
+        return h_cu, h_cv, utwa, vtwa
+
     else:
         slh,dimh = rdp1.getslice(fh,wlon=xstart,elon=xend,
                 slat=ystart, nlat=yend,zs=zs,ze=ze)
@@ -38,79 +56,79 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
         slv,dimv = rdp1.getslice(fh,xstart,xend,ystart,yend,
                 zs=zs,ze=ze,ts=0,te=None,xhxq='xh',yhyq='yq',zlzi='zl')
 
-    uh = fh2.variables['uh'][slu]
-    h_cu = fh.variables['h_Cu'][slu]
-    h_cu = np.ma.masked_array(h_cu,mask=(h_cu<1e-3))
-    dycu = fhgeo.variables['dyCu'][slu[2:]]
-    utwa = uh/h_cu/dycu
+        uh = fh2.variables['uh'][slu]
+        h_cu = fh.variables['h_Cu'][slu]
+        h_cu = np.ma.masked_array(h_cu,mask=(h_cu<1e-3))
+        dycu = fhgeo.variables['dyCu'][slu[2:]]
+        utwa = uh/h_cu/dycu
 
-    vh = fh2.variables['vh'][slv]
-    h_cv = fh.variables['h_Cv'][slv]
-    h_cv = np.ma.masked_array(h_cv,mask=(h_cv<1e-3))
-    dxcv = fhgeo.variables['dxCv'][slv[2:]]
-    vtwa = vh/dxcv/h_cv
- 
-    emforxdiff = fh.variables['e'][slhmx]
-    elmforxdiff = 0.5*(emforxdiff[:,0:-1,:,:]+emforxdiff[:,1:,:,:])
-    elmforxdiff = np.concatenate((elmforxdiff,elmforxdiff[:,:,:,-1:]),axis=3)
-    dxcuforxdiff = fhgeo.variables['dxCu'][slhmx[2:]]
-    ex = np.diff(elmforxdiff,axis=3)/dxcuforxdiff
+        vh = fh2.variables['vh'][slv]
+        h_cv = fh.variables['h_Cv'][slv]
+        h_cv = np.ma.masked_array(h_cv,mask=(h_cv<1e-3))
+        dxcv = fhgeo.variables['dxCv'][slv[2:]]
+        vtwa = vh/dxcv/h_cv
+     
+        emforxdiff = fh.variables['e'][slhmx]
+        elmforxdiff = 0.5*(emforxdiff[:,0:-1,:,:]+emforxdiff[:,1:,:,:])
+        elmforxdiff = np.concatenate((elmforxdiff,elmforxdiff[:,:,:,-1:]),axis=3)
+        dxcuforxdiff = fhgeo.variables['dxCu'][slhmx[2:]]
+        ex = np.diff(elmforxdiff,axis=3)/dxcuforxdiff
 
-    uh = fh2.variables['uh'][slhmx]
-    h_cu = fh.variables['h_Cu'][slhmx]
-    h_cu = np.ma.masked_array(h_cu,mask=(h_cu<1e-3))
-    dycu = fhgeo.variables['dyCu'][slhmx[2:]]
-    uzx = (uh/h_cu/dycu).filled(0)*ex
-    uzx = 0.5*(uzx[:,:,:,1:]+uzx[:,:,:,:-1])
+        uh = fh2.variables['uh'][slhmx]
+        h_cu = fh.variables['h_Cu'][slhmx]
+        h_cu = np.ma.masked_array(h_cu,mask=(h_cu<1e-3))
+        dycu = fhgeo.variables['dyCu'][slhmx[2:]]
+        uzx = (uh/h_cu/dycu).filled(0)*ex
+        uzx = 0.5*(uzx[:,:,:,1:]+uzx[:,:,:,:-1])
 
-    emforydiff = fh.variables['e'][slhmpy]
-    elmforydiff = 0.5*(emforydiff[:,0:-1,:,:]+emforydiff[:,1:,:,:])
-    dycv = fhgeo.variables['dyCv'][slhmy[2:]]
-    ey = np.diff(elmforydiff,axis=2)/dycv
+        emforydiff = fh.variables['e'][slhmpy]
+        elmforydiff = 0.5*(emforydiff[:,0:-1,:,:]+emforydiff[:,1:,:,:])
+        dycv = fhgeo.variables['dyCv'][slhmy[2:]]
+        ey = np.diff(elmforydiff,axis=2)/dycv
 
-    vh = fh2.variables['vh'][slhmy]
-    h_cv = fh.variables['h_Cv'][slhmy]
-    h_cv = np.ma.masked_array(h_cv,mask=(h_cv<1e-3))
-    dxcv = fhgeo.variables['dxCv'][slhmy[2:]]
-    vtwa = vh/dxcv/h_cv
-    vzy = vtwa*ey
-    vtwa = 0.5*(vtwa[:,:,1:,:]+vtwa[:,:,:-1,:])
-    vzy = 0.5*(vzy[:,:,1:,:]+vzy[:,:,:-1,:])
+        vh = fh2.variables['vh'][slhmy]
+        h_cv = fh.variables['h_Cv'][slhmy]
+        h_cv = np.ma.masked_array(h_cv,mask=(h_cv<1e-3))
+        dxcv = fhgeo.variables['dxCv'][slhmy[2:]]
+        vtwa = vh/dxcv/h_cv
+        vzy = vtwa*ey
+        vtwa = 0.5*(vtwa[:,:,1:,:]+vtwa[:,:,:-1,:])
+        vzy = 0.5*(vzy[:,:,1:,:]+vzy[:,:,:-1,:])
 
-    wb = fh.variables['hw_Cv'][slhmy]
-    wzb = 0.5*(wb[:,:,1:,:]+wb[:,:,:-1,:])
-    whash = uzx + vzy + wzb
+        wb = fh.variables['hw_Cv'][slhmy]
+        wzb = 0.5*(wb[:,:,1:,:]+wb[:,:,:-1,:])
+        whash = uzx + vzy + wzb
 
-    terms = [utwa,vtwa,whash]
-    slices = [slu,slv,slh]
-    X = [dimu[keepax[1]],dimv[keepax[1]],dimh[keepax[1]]]
-    Y = [dimu[keepax[0]],dimv[keepax[0]],dimh[keepax[0]]]
-    termsm = []
-    for item in terms:
-        termsm.append(np.ma.apply_over_axes(np.nanmean, item, meanax))
+        terms = [utwa,vtwa,whash]
+        slices = [slu,slv,slh]
+        X = [dimu[keepax[1]],dimv[keepax[1]],dimh[keepax[1]]]
+        Y = [dimu[keepax[0]],dimv[keepax[0]],dimh[keepax[0]]]
+        termsm = []
+        for item in terms:
+            termsm.append(np.ma.apply_over_axes(np.nanmean, item, meanax))
 
-    if 1 in keepax:
-        X1 = []
-        Y = []
-        for i in range(len(terms)):
-            em = fh.variables['e'][slices[i]]
-            elm = 0.5*(em[:,:-1] + em[:,1:])
-            em = np.ma.apply_over_axes(np.mean, em, meanax)
-            elm = np.ma.apply_over_axes(np.mean, elm, meanax)
-            Y.append(elm.squeeze())
-            X1.append(np.meshgrid(X[i],dimh[1])[0])
-        X = X1
+        if 1 in keepax:
+            X1 = []
+            Y = []
+            for i in range(len(terms)):
+                em = fh.variables['e'][slices[i]]
+                elm = 0.5*(em[:,:-1] + em[:,1:])
+                em = np.ma.apply_over_axes(np.mean, em, meanax)
+                elm = np.ma.apply_over_axes(np.mean, elm, meanax)
+                Y.append(elm.squeeze())
+                X1.append(np.meshgrid(X[i],dimh[1])[0])
+            X = X1
 
-    fh2.close()
-    fh.close()
+        fh2.close()
+        fh.close()
 
-    P = []
-    for i, item in enumerate(termsm):
-        P.append(np.ma.filled(item.squeeze().astype(float),np.nan))
-        X[i] = np.ma.filled(X[i].astype(float), np.nan)
-        Y[i] = np.ma.filled(Y[i].astype(float), np.nan)
+        P = []
+        for i, item in enumerate(termsm):
+            P.append(np.ma.filled(item.squeeze().astype(float),np.nan))
+            X[i] = np.ma.filled(X[i].astype(float), np.nan)
+            Y[i] = np.ma.filled(Y[i].astype(float), np.nan)
 
-    return X,Y,P
+        return X,Y,P
 
 def plot_uv(geofil,vgeofil,fil,fil2,xstart,xend,
             ystart,yend,zs,ze,meanax,minperc = [5,3,0],xyasindices = False):
