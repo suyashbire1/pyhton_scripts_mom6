@@ -38,7 +38,9 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         ymom = np.concatenate((ymom,-ymom[:,:,:,-1:]),axis=3)
 
         pv = -np.diff(xmom,axis=2)/dybu[:,:,np.newaxis] + np.diff(ymom,axis=3)/dxbu[:,:,np.newaxis]
-        pv = np.ma.masked_values(pv,0.0)
+        pvmask = np.zeros(pv.shape,dtype=np.int8)
+        pvmask[:,:,:,-1:] = 1
+        pv = np.ma.masked_array(pv, mask=(pvmask==1))
         pv = np.ma.apply_over_axes(np.nanmean, pv, meanax)
 
         X = dimq[keepax[1]]
