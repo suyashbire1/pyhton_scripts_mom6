@@ -100,13 +100,47 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         pvflxy = h_cv1*(pvhashutwa[:,:,:,:-1]+pvhashutwa[:,:,:,1:])/2
         pvflxy = np.concatenate((pvflxy,-pvflxy[:,:,:,-1:]),axis=3)
 
+        bx = bxppvflx - pvflxx
+        by = byppvflx + pvflxy
+
         xmom1 = xmom[:,:,:,:,[2,5,6,7,8,9]]
+        xmom1 = np.concatenate((xmom1, bx[:,:,:,:,np.newaxis], pvflxx[:,:,:,:,np.newaxis]), axis = 4) 
         ymom1 = ymom[:,:,:,:,[2,5,6,7,8,9]]
+        ymom1 = np.concatenate((ymom1, by[:,:,:,:,np.newaxis], -pvflxy[:,:,:,:,np.newaxis]), axis = 4) 
 
         pv = -np.diff(xmom,axis=2)/dybu[:,:,np.newaxis] + np.diff(ymom,axis=3)/dxbu[:,:,np.newaxis]
+        pv1 = -np.diff(xmom1,axis=2)/dybu[:,:,np.newaxis] + np.diff(ymom1,axis=3)/dxbu[:,:,np.newaxis]
+
+        slyp = np.s_[:,:,ys:ye+1,xs:xe]
+        dxt1 = fhgeo.variables['dxT'][slyp[2:]]
+        dyt1 = fhgeo.variables['dyT'][slyp[2:]]
+        slxmyp = np.s_[:,:,ys:ye+1,xs-1:xe]
+        uh = fh2.variables['uh'][slxmyp].filled(0)
+        uhx = np.diff(uh,axis=3)/dxt1/dyt1
+        uhx = np.concatenate((uhx,uhx[:,:,:,-1:]),axis=3)
+        uhx = 0.25*(uhx[:,:,:-1,:-1] + uhx[:,:,:-1,1:] + uhx[:,:,1:,:-1] +
+                uhx[:,:,1:,1:])
+        pv1[:,:,:,:,-1] += pvhash*uhx
+
+        slymp = np.s_[:,:,ys-1:ye+1,xs:xe]
+        vh = fh2.variables['vh'][slymp]
+        vhy = np.diff(vh,axis=2)/dxt1/dyt1
+        vhy = np.concatenate((vhy,vhy[:,:,:,-1:]),axis=3)
+        vhy = 0.25*(vhy[:,:,:-1,:-1] + vhy[:,:,:-1,1:] + vhy[:,:,1:,:-1] +
+                vhy[:,:,1:,1:])
+        pv1[:,:,:,:,-1] += pvhash*vhy
+
+        wd = fh2.variables['wd'][slyp]
+        wdb = np.diff(wd,axis=1)
+        wdb = np.concatenate((wdb,wdb[:,:,:,-1:]),axis=3)
+        wdb = 0.25*(wdb[:,:,:-1,:-1] + wdb[:,:,:-1,1:] + wdb[:,:,1:,:-1] +
+                wdb[:,:,1:,1:])
+        #pv1[:,:,:,:,-1] += pvhash*wdb
+
         pvmask = np.zeros(pv.shape,dtype=np.int8)
         pvmask[:,:,:,-1:] = 1
         pv = np.ma.masked_array(pv, mask=(pvmask==1))
+
 
         pv = np.ma.apply_over_axes(np.nanmean, pv, meanax)
         pvhash = np.ma.apply_over_axes(np.nanmean, pvhash, meanax)
