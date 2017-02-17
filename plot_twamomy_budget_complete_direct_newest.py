@@ -38,9 +38,9 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         Dforgethvforydiff = rdp1.getgeombyindx(fhgeo,xs,xe,ys-1,ye)[0]
         dxt,dyt = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye+1)[2][6:8]
         dxcv,dycv = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[2][2:4]
-        dxcvforxdiff = rdp1.getgeombyindx(fhgeo,xs-1,xe,ys,ye)[2][2:3]
+        dxcvforxdiff,dycvforxdiff = rdp1.getgeombyindx(fhgeo,xs-1,xe,ys,ye)[2][2:4]
         dxcvforydiff = rdp1.getgeombyindx(fhgeo,xs,xe,ys-1,ye+1)[2][3:4]
-        dxbu = rdp1.getgeombyindx(fhgeo,xs-1,xe,ys,ye)[2][4]
+        dxbu,dybu = rdp1.getgeombyindx(fhgeo,xs-1,xe,ys,ye)[2][4:6]
         nt_const = dimv[0].size
         t0 = time.time()
 
@@ -56,33 +56,33 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         vhforxdiff = fh2.variables['vh'][0:,zs:ze,ys:ye,xs-1:xe]
         h_cvforxdiff = fh.variables['h_Cv'][0:,zs:ze,ys:ye,xs-1:xe]
         h_cvforxdiff = np.ma.masked_array(h_cvforxdiff, mask=(h_cvforxdiff<1e-3))
-        vtwaforxdiff = vhforxdiff/h_cvforxdiff/dxcvforxdiff
+        vtwaforxdiff = vhforxdiff/h_cvforxdiff#/dxcvforxdiff
         vtwaforxdiff = np.ma.concatenate((vtwaforxdiff,vtwaforxdiff[:,:,:,-1:]),axis=3)
 
         vhforydiff = fh2.variables['vh'][0:,zs:ze,ys-1:ye+1,xs:xe]
         h_cvforydiff = fh.variables['h_Cv'][0:,zs:ze,ys-1:ye+1,xs:xe]
         h_cvforydiff = np.ma.masked_array(h_cvforydiff, mask=(h_cvforydiff<1e-3))
-        vtwaforydiff = vhforydiff/h_cvforydiff/dxcvforydiff
+        vtwaforydiff = vhforydiff/h_cvforydiff#/dxcvforydiff
 
-        vtwax = np.diff(vtwaforxdiff,axis=3)/dxbu
+        vtwax = np.diff(vtwaforxdiff,axis=3)/dxbu/dybu
         vtwax = 0.5*(vtwax[:,:,:,0:-1] + vtwax[:,:,:,1:])
 
-        vtway = np.diff(vtwaforydiff,axis=2)/dyt
+        vtway = np.diff(vtwaforydiff,axis=2)/dyt/dxt
         vtway = 0.5*(vtway[:,:,0:-1,:] + vtway[:,:,1:,:])
 
-        hvmy = np.diff(vhforydiff/dxcvforydiff,axis=2)/dyt
+        hvmy = np.diff(vhforydiff,axis=2)/dyt/dxt
         hvmy = 0.5*(hvmy[:,:,:-1,:] + hvmy[:,:,1:,:])
 
         hum = fh.variables['hu_Cv'][0:,zs:ze,ys:ye,xs:xe]
-        humforxdiff = fh.variables['hu_Cv'][0:,zs:ze,ys:ye,xs-1:xe]
+        humforxdiff = fh.variables['hu_Cv'][0:,zs:ze,ys:ye,xs-1:xe]*dycvforxdiff
         humforxdiff = np.concatenate((humforxdiff,-humforxdiff[:,:,:,-1:]),axis=3)
-        humx = np.diff(humforxdiff,axis=3)/dxbu
+        humx = np.diff(humforxdiff,axis=3)/dxbu/dybu
         humx = 0.5*(humx[:,:,:,:-1] + humx[:,:,:,1:])
 
         huvxphvvym = (fh.variables['twa_huvxpt'][0:,zs:ze,ys:ye,xs:xe] +
                 fh.variables['twa_hvvymt'][0:,zs:ze,ys:ye,xs:xe])
-        hvv = fh.variables['hvv_T'][0:,zs:ze,ys:ye+1,xs:xe]
-        hvvym = np.diff(hvv,axis=2)/dycv
+        hvv = fh.variables['hvv_T'][0:,zs:ze,ys:ye+1,xs:xe]*dxt
+        hvvym = np.diff(hvv,axis=2)/dycv/dxcv
         huvxm = huvxphvvym - hvvym
 
         vtwaforvdiff = np.ma.concatenate((vtwa[:,[0],:,:],vtwa),axis=1)
@@ -102,14 +102,6 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         hpfv = fh.variables['twa_hpfv'][0:,zs:ze,ys:ye,xs:xe]
         pfvm = fh.variables['pfv_masked'][0:,zs:ze,ys:ye,xs:xe]
         edpfvdmb = -hpfv + h_cv*pfvm - 0.5*edlsqmy*dbl[:,np.newaxis,np.newaxis]
-
-#        epfv = fh.variables['epfv'][0:,zs:ze,ys:ye,xs:xe]
-#        ecv = fh.variables['e_Cv'][0:,zs:ze,ys:ye,xs:xe]
-#        pfvm = fh.variables['pfv_masked'][0:,zs:ze,ys:ye,xs:xe]
-#        edpfvdm = epfv - pfvm*ecv
-#        edpfvdmb = np.diff(edpfvdm,axis=1)
-#        edpfvdmb = np.concatenate((edpfvdmb[:,:1,:,:],edpfvdmb,edpfvdmb[:,-1:,:,:]),axis=1)
-#        edpfvdmb = 0.5*(edpfvdmb[:,:-1,:,:] + edpfvdmb[:,1:,:,:])
 
         hmfum = fh.variables['twa_hmfu'][0:1,zs:ze,ys:ye,xs:xe]
         hvwbm = fh.variables['twa_hvwb'][0:1,zs:ze,ys:ye,xs:xe]
