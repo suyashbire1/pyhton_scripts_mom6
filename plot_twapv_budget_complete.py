@@ -63,10 +63,16 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
                 slat=ystart, nlat=yend,zs=zs,ze=ze,xhxq='xq',yhyq='yq')
         dxbu = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[2][4]
         dybu = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[2][5]
+        aq = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[1][1]
         f = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[-1]
         nt_const = dimq[0].size
 
         pvhash,hq = getpv(fhgeo, fh, fh2, xs, xe, ys, ye)
+        sl = np.s_[:,zs:ze,ys:ye,xs:xe]
+        slpy = np.s_[:,zs:ze,ys:ye+1,xs:xe]
+        dxcu = fhgeo.variables['dxCu'][slpy[2:]]
+        dycv = fhgeo.variables['dyCv'][sl[2:]]
+        dycv = np.concatenate((dycv,dycv[:,-1:]),axis=1)
 
         xmom = extract_twamomx_terms(geofil,vgeofil,fil,fil2,xs,xe,ys,ye+1,zs,ze,(0,),
                 alreadysaved=False,xyasindices=True,calledfrompv=True)[2]
@@ -109,16 +115,15 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         ymom1 = ymom[:,:,:,:,[2,5,6,7,8,9]]
         ymom1 = np.concatenate((-pvflxy[:,:,:,:,np.newaxis], ymom1, by[:,:,:,:,np.newaxis]), axis = 4) 
 
-        pv = -np.diff(xmom,axis=2)/dybu[:,:,np.newaxis] + np.diff(ymom,axis=3)/dxbu[:,:,np.newaxis]
-        pv1x = -np.diff(xmom1,axis=2)/dybu[:,:,np.newaxis]
-        pv1y =  np.diff(ymom1,axis=3)/dxbu[:,:,np.newaxis]
+        pv = (-np.diff(xmom*dxcu[:,:,np.newaxis],axis=2) + np.diff(ymom*dycv[:,:,np.newaxis],axis=3))/aq[:,:,np.newaxis]
+        pv1x = -np.diff(xmom1*dxcu[:,:,np.newaxis],axis=2)/aq[:,:,np.newaxis]
+        pv1y =  np.diff(ymom1*dycv[:,:,np.newaxis],axis=3)/aq[:,:,np.newaxis]
 
         slyp = np.s_[:,:,ys:ye+1,xs:xe]
-        dxt1 = fhgeo.variables['dxT'][slyp[2:]]
-        dyt1 = fhgeo.variables['dyT'][slyp[2:]]
+        ah1 = fhgeo.variables['Ah'][slyp[2:]]
         slxmyp = np.s_[:,:,ys:ye+1,xs-1:xe]
         uh = fh2.variables['uh'][slxmyp].filled(0)
-        uhx = np.diff(uh,axis=3)/dxt1/dyt1
+        uhx = np.diff(uh,axis=3)/ah1
         uhx = np.concatenate((uhx,uhx[:,:,:,-1:]),axis=3)
         uhx = 0.25*(uhx[:,:,:-1,:-1] + uhx[:,:,:-1,1:] + uhx[:,:,1:,:-1] +
                 uhx[:,:,1:,1:])
@@ -126,7 +131,7 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
 
         slymp = np.s_[:,:,ys-1:ye+1,xs:xe]
         vh = fh2.variables['vh'][slymp]
-        vhy = np.diff(vh,axis=2)/dxt1/dyt1
+        vhy = np.diff(vh,axis=2)/ah1
         vhy = np.concatenate((vhy,vhy[:,:,:,-1:]),axis=3)
         vhy = 0.25*(vhy[:,:,:-1,:-1] + vhy[:,:,:-1,1:] + vhy[:,:,1:,:-1] +
                 vhy[:,:,1:,1:])
