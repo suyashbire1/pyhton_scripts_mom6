@@ -40,8 +40,9 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         dxcu,dycu = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[2][0:2]
         dycuforxdiff = rdp1.getgeombyindx(fhgeo,xs-1,xe,ys,ye)[2][1:2]
         dycuforydiff = rdp1.getgeombyindx(fhgeo,xs,xe,ys-1,ye+1)[2][1:2]
-        dybu = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye+1)[2][5]
-        dyt1 = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye+1)[2][7]
+        dxbu,dybu = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye+1)[2][4:6]
+        aq1 = rdp1.getgeombyindx(fhgeo,xs,xe,ys-1,ye)[1][1]
+        dxcu1 = rdp1.getgeombyindx(fhgeo,xs,xe,ys-1,ye+1)[2][0]
         nt_const = dimu[0].size
         t0 = time.time()
 
@@ -57,34 +58,34 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         uhforxdiff = fh2.variables['uh'][0:,zs:ze,ys:ye,xs-1:xe]
         h_cuforxdiff = fh.variables['h_Cu'][0:,zs:ze,ys:ye,xs-1:xe]
         h_cuforxdiff = np.ma.masked_array(h_cuforxdiff, mask = (h_cuforxdiff<1e-3))
-        utwaforxdiff = uhforxdiff/h_cuforxdiff/dycuforxdiff
+        utwaforxdiff = uhforxdiff/h_cuforxdiff#/dycuforxdiff
 
         uhforydiff = fh2.variables['uh'][0:,zs:ze,ys-1:ye+1,xs:xe]
         h_cuforydiff = fh.variables['h_Cu'][0:,zs:ze,ys-1:ye+1,xs:xe]
         h_cuforydiff = np.ma.masked_array(h_cuforydiff, mask = (h_cuforydiff<1e-3))
-        utwaforydiff = uhforydiff/h_cuforydiff/dycuforydiff
+        utwaforydiff = uhforydiff/h_cuforydiff#/dycuforydiff
 
-        utwax = np.diff(utwaforxdiff.filled(0),axis=3)/dxt
+        utwax = np.diff(utwaforxdiff.filled(0),axis=3)/dxt/dyt
         utwax = np.concatenate((utwax,-utwax[:,:,:,[-1]]),axis=3)
         utwax = 0.5*(utwax[:,:,:,0:-1] + utwax[:,:,:,1:])
 
-        utway = np.diff(utwaforydiff,axis=2)/dybu
+        utway = np.diff(utwaforydiff,axis=2)/dxbu/dybu
         utway = 0.5*(utway[:,:,0:-1,:] + utway[:,:,1:,:])
 
-        humx = np.diff(uhforxdiff.filled(0)/dycuforxdiff,axis=3)/dxt
+        humx = np.diff(uhforxdiff.filled(0),axis=3)/dxt/dyt
         humx = np.concatenate((humx,-humx[:,:,:,[-1]]),axis=3)
         humx = 0.5*(humx[:,:,:,0:-1] + humx[:,:,:,1:])
 
         hvm = fh.variables['hv_Cu'][0:,zs:ze,ys:ye,xs:xe]
-        hv_cu = fh.variables['hv_Cu'][0:,zs:ze,ys-1:ye+1,xs:xe]
-        hvmy = np.diff(hv_cu,axis=2)/dyt1
+        hv_cu = fh.variables['hv_Cu'][0:,zs:ze,ys-1:ye+1,xs:xe]*dxcu1
+        hvmy = np.diff(hv_cu,axis=2)/aq1
         hvmy = 0.5*(hvmy[:,:,:-1,:] + hvmy[:,:,1:,:])
 
         huuxphuvym = (fh.variables['twa_huuxpt'][0:,zs:ze,ys:ye,xs:xe] +
                 fh.variables['twa_huvymt'][0:,zs:ze,ys:ye,xs:xe])
-        huu = fh.variables['huu_T'][0:,zs:ze,ys:ye,xs:xe]
+        huu = fh.variables['huu_T'][0:,zs:ze,ys:ye,xs:xe]*dyt
         huu = np.concatenate((huu,-huu[:,:,:,-1:]),axis=3)
-        huuxm = np.diff(huu,axis=3)/dxt
+        huuxm = np.diff(huu,axis=3)/dxcu/dycu
         huvym = huuxphuvym - huuxm
 
         utwaforvdiff = np.concatenate((utwa[:,[0],:,:],utwa),axis=1)
@@ -97,22 +98,12 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
 
         esq = fh.variables['esq'][0:,zs:ze,ys:ye,xs:xe]
         edlsqm = (esq - elm**2)
-        vmax = np.percentile(edlsqm,[3,97])
-#        edlsqm = np.ma.masked_array(edlsqm,mask=(edlsqm<vmax[0]))
-        edlsqm1 = np.ma.concatenate((edlsqm,edlsqm[:,:,:,-1:]),axis=3)
-        edlsqmx = np.diff(edlsqm1,axis=3)/dxcu
+        edlsqm = np.ma.concatenate((edlsqm,edlsqm[:,:,:,-1:]),axis=3)
+        edlsqmx = np.diff(edlsqm,axis=3)/dxcu
 
         hpfu = fh.variables['twa_hpfu'][0:,zs:ze,ys:ye,xs:xe]
         pfum = fh.variables['pfu_masked'][0:,zs:ze,ys:ye,xs:xe]
         edpfudmb = -hpfu + h_cu*pfum - 0.5*edlsqmx*dbl[:,np.newaxis,np.newaxis]
-
-#        epfu = fh.variables['epfu'][0:,zs:ze,ys:ye,xs:xe]
-#        ecu = fh.variables['e_Cu'][0:,zs:ze,ys:ye,xs:xe]
-#        pfum = fh.variables['pfu_masked'][0:,zs:ze,ys:ye,xs:xe]
-#        edpfudm = epfu - pfum*ecu
-#        edpfudmb = np.diff(edpfudm,axis=1)
-#        edpfudmb = np.concatenate((edpfudmb[:,:1,:,:],edpfudmb,edpfudmb[:,-1:,:,:]),axis=1)
-#        edpfudmb = 0.5*(edpfudmb[:,:-1,:,:] + edpfudmb[:,1:,:,:])
 
         hfvm = fh.variables['twa_hfv'][0:1,zs:ze,ys:ye,xs:xe]
         huwbm = fh.variables['twa_huwb'][0:1,zs:ze,ys:ye,xs:xe]
