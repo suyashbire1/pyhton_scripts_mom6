@@ -7,7 +7,7 @@ from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
 
 def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
-      alreadysaved=False,xyasindices=False,calledfrompv=False):
+      alreadysaved=False,xyasindices=False,calledfrompv=False,htol=1e-3):
 
     if not alreadysaved:
         keepax = ()
@@ -42,50 +42,61 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         dycuforydiff = rdp1.getgeombyindx(fhgeo,xs,xe,ys-1,ye+1)[2][1:2]
         dxbu,dybu = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye+1)[2][4:6]
         aq1 = rdp1.getgeombyindx(fhgeo,xs,xe,ys-1,ye)[1][1]
+        ah1 = rdp1.getgeombyindx(fhgeo,xs-1,xe,ys,ye)[1][0]
         dxcu1 = rdp1.getgeombyindx(fhgeo,xs,xe,ys-1,ye+1)[2][0]
         nt_const = dimu[0].size
         t0 = time.time()
 
-        em = fh.variables['e'][0:,zs:ze,ys:ye,xs:xe]
+        em = fh2.variables['e'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
         elm = 0.5*(em[:,0:-1,:,:]+em[:,1:,:,:])
 
-        uh = fh2.variables['uh'][0:,zs:ze,ys:ye,xs:xe]
-        h_cu = fh.variables['h_Cu'][0:,zs:ze,ys:ye,xs:xe]
-        h_cu = np.ma.masked_array(h_cu, mask = (h_cu<1e-3))
+        uh = fh.variables['uh_masked'][0:,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
+        h_cu = fh.variables['h_Cu'][0:,zs:ze,ys:ye,xs:xe].filled(0).mean(axis=0,keepdims=True)
+        h_cu[h_cu < htol] = np.nan
         h_um = h_cu
         utwa = uh/h_cu/dycu
 
-        uhforxdiff = fh2.variables['uh'][0:,zs:ze,ys:ye,xs-1:xe]
-        h_cuforxdiff = fh.variables['h_Cu'][0:,zs:ze,ys:ye,xs-1:xe]
-        h_cuforxdiff = np.ma.masked_array(h_cuforxdiff, mask = (h_cuforxdiff<1e-3))
+        uhforxdiff = fh.variables['uh_masked'][0:,zs:ze,ys:ye,xs-1:xe].filled(np.nan).mean(axis=0,keepdims=True)
+        h_cuforxdiff = fh.variables['h_Cu'][0:,zs:ze,ys:ye,xs-1:xe].filled(0).mean(axis=0,keepdims=True)
+        h_cuforxdiff[h_cuforxdiff < htol] = np.nan
         utwaforxdiff = uhforxdiff/h_cuforxdiff#/dycuforxdiff
 
-        uhforydiff = fh2.variables['uh'][0:,zs:ze,ys-1:ye+1,xs:xe]
-        h_cuforydiff = fh.variables['h_Cu'][0:,zs:ze,ys-1:ye+1,xs:xe]
-        h_cuforydiff = np.ma.masked_array(h_cuforydiff, mask = (h_cuforydiff<1e-3))
+        uhforydiff = fh.variables['uh_masked'][0:,zs:ze,ys-1:ye+1,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
+        h_cuforydiff = fh.variables['h_Cu'][0:,zs:ze,ys-1:ye+1,xs:xe].filled(0).mean(axis=0,keepdims=True)
+        h_cuforydiff[h_cuforydiff < htol] = np.nan
         utwaforydiff = uhforydiff/h_cuforydiff#/dycuforydiff
 
-        utwax = np.diff(utwaforxdiff.filled(0),axis=3)/dxt/dyt
+        utwax = np.diff(np.nan_to_num(utwaforxdiff),axis=3)/dxt/dyt
         utwax = np.concatenate((utwax,-utwax[:,:,:,[-1]]),axis=3)
         utwax = 0.5*(utwax[:,:,:,0:-1] + utwax[:,:,:,1:])
 
         utway = np.diff(utwaforydiff,axis=2)/dxbu/dybu
         utway = 0.5*(utway[:,:,0:-1,:] + utway[:,:,1:,:])
 
-        humx = np.diff(uhforxdiff.filled(0),axis=3)/dxt/dyt
+        humx = np.diff(np.nan_to_num(uhforxdiff),axis=3)/dxt/dyt
         humx = np.concatenate((humx,-humx[:,:,:,[-1]]),axis=3)
         humx = 0.5*(humx[:,:,:,0:-1] + humx[:,:,:,1:])
 
-        hvm = fh.variables['hv_Cu'][0:,zs:ze,ys:ye,xs:xe]
-        hv_cu = fh.variables['hv_Cu'][0:,zs:ze,ys-1:ye+1,xs:xe]*dxcu1
-        hvmy = np.diff(hv_cu,axis=2)/aq1
-        hvmy = 0.5*(hvmy[:,:,:-1,:] + hvmy[:,:,1:,:])
+        hvm = fh.variables['vh_masked'][0:,zs:ze,ys-1:ye,xs:xe].mean(axis=0,keepdims=True)
+        hvm = np.concatenate((hvm,-hvm[:,:,:,-1:]),axis=3)
+        hvm = 0.25*(hvm[:,:,:-1,:-1] + hvm[:,:,:-1,1:] + hvm[:,:,1:,:-1] +
+                hvm[:,:,1:,1:])/dxcu
+
+        hv = fh.variables['vh_masked'][0:,zs:ze,ys-1:ye,xs:xe].mean(axis=0,keepdims=True)
+        hvmy = np.diff(hv,axis=2)/dxt/dyt
+        hvmy = np.concatenate((hvmy,-hvmy[:,:,:,-1:]),axis=3)
+        hvmy = 0.5*(hvmy[:,:,:,:-1] + hvmy[:,:,:,1:])
 
         huuxphuvym = (fh.variables['twa_huuxpt'][0:,zs:ze,ys:ye,xs:xe] +
-                fh.variables['twa_huvymt'][0:,zs:ze,ys:ye,xs:xe])
-        huu = fh.variables['huu_T'][0:,zs:ze,ys:ye,xs:xe]*dyt
-        huu = np.concatenate((huu,-huu[:,:,:,-1:]),axis=3)
-        huuxm = np.diff(huu,axis=3)/dxcu/dycu
+                fh.variables['twa_huvymt'][0:,zs:ze,ys:ye,xs:xe]).filled(np.nan).mean(axis=0,keepdims=True)
+        u = fh2.variables['u'][0:,zs:ze,ys:ye,xs-1:xe].filled(np.nan).mean(axis=0,keepdims=True)
+        huu = uhforxdiff*u
+        huuxm = np.diff(np.nan_to_num(huu),axis=3)/dxt/dyt
+        huuxm = np.concatenate((huuxm,-huuxm[:,:,:,-1:]),axis=3)
+        huuxm = 0.5*(huuxm[:,:,:,:-1] + huuxm[:,:,:,1:])
+        #huu = fh.variables['huu_T'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
+        #huu = np.concatenate((huu,-huu[:,:,:,-1:]),axis=3)
+        #huuxm = np.diff(huu,axis=3)/dxcu/dycu
         huvym = huuxphuvym - huuxm
 
         utwaforvdiff = np.concatenate((utwa[:,[0],:,:],utwa),axis=1)
@@ -93,22 +104,25 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         utwab = np.concatenate((utwab,np.zeros(utwab[:,:1,:,:].shape)),axis=1)
         utwab = 0.5*(utwab[:,0:-1,:,:] + utwab[:,1:,:,:])
 
-        hwb_u = fh.variables['hwb_Cu'][0:,zs:ze,ys:ye,xs:xe]
-        hwm_u = fh.variables['hw_Cu'][0:,zs:ze,ys:ye,xs:xe]
+        hwb = fh2.variables['wd'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
+        hwb = np.diff(hwb,axis=1)
+        hwb = np.concatenate((hwb,-hwb[:,:,:,-1:]),axis=3)
+        hwb_u = 0.5*(hwb[:,:,:,:-1] + hwb[:,:,:,1:])
+        hwm_u = hwb_u*dbl[:,np.newaxis,np.newaxis]
 
-        esq = fh.variables['esq'][0:,zs:ze,ys:ye,xs:xe]
+        esq = fh.variables['esq'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
         edlsqm = (esq - elm**2)
-        edlsqm = np.ma.concatenate((edlsqm,edlsqm[:,:,:,-1:]),axis=3)
+        edlsqm = np.concatenate((edlsqm,edlsqm[:,:,:,-1:]),axis=3)
         edlsqmx = np.diff(edlsqm,axis=3)/dxcu
 
-        hpfu = fh.variables['twa_hpfu'][0:,zs:ze,ys:ye,xs:xe]
-        pfum = fh.variables['pfu_masked'][0:,zs:ze,ys:ye,xs:xe]
+        hpfu = fh.variables['twa_hpfu'][0:,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
+        pfum = fh.variables['pfu_masked'][0:,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
         edpfudmb = -hpfu + h_cu*pfum - 0.5*edlsqmx*dbl[:,np.newaxis,np.newaxis]
 
-        hfvm = fh.variables['twa_hfv'][0:1,zs:ze,ys:ye,xs:xe]
-        huwbm = fh.variables['twa_huwb'][0:1,zs:ze,ys:ye,xs:xe]
-        hdiffum = fh.variables['twa_hdiffu'][0:1,zs:ze,ys:ye,xs:xe]
-        hdudtviscm = fh.variables['twa_hdudtvisc'][0:1,zs:ze,ys:ye,xs:xe]
+        hfvm = fh.variables['twa_hfv'][0:1,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
+        huwbm = fh.variables['twa_huwb'][0:1,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
+        hdiffum = fh.variables['twa_hdiffu'][0:1,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
+        hdudtviscm = fh.variables['twa_hdudtvisc'][0:1,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
         fh2.close()
         fh.close()
 
@@ -137,46 +151,40 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         X1twa = hdiffum/h_um
         X2twa = hdudtviscm/h_um
 
-        terms = np.ma.concatenate(( -advx[:,:,:,:,np.newaxis],
-                                    -advy[:,:,:,:,np.newaxis],
-                                    -advb[:,:,:,:,np.newaxis],
-                                    cor[:,:,:,:,np.newaxis],
-                                    pfum[:,:,:,:,np.newaxis],
-                                    -xdivep[:,:,:,:,np.newaxis],
-                                    -ydivep[:,:,:,:,np.newaxis],
-                                    -bdivep[:,:,:,:,np.newaxis],
-                                    X1twa[:,:,:,:,np.newaxis],
-                                    X2twa[:,:,:,:,np.newaxis]),
+        terms = np.concatenate((-advx[:,:,:,:,np.newaxis],
+                                -advy[:,:,:,:,np.newaxis],
+                                -advb[:,:,:,:,np.newaxis],
+                                cor[:,:,:,:,np.newaxis],
+                                pfum[:,:,:,:,np.newaxis],
+                                -xdivep[:,:,:,:,np.newaxis],
+                                -ydivep[:,:,:,:,np.newaxis],
+                                -bdivep[:,:,:,:,np.newaxis],
+                                X1twa[:,:,:,:,np.newaxis],
+                                X2twa[:,:,:,:,np.newaxis]),
+                                axis=4)
+        termsep = np.concatenate((  -xdivep1[:,:,:,:,np.newaxis],
+                                    -xdivep3[:,:,:,:,np.newaxis],
+                                    -xdivep4[:,:,:,:,np.newaxis],
+                                    -ydivep1[:,:,:,:,np.newaxis],
+                                    -ydivep3[:,:,:,:,np.newaxis],
+                                    -bdivep1[:,:,:,:,np.newaxis],
+                                    -bdivep3[:,:,:,:,np.newaxis],
+                                    -bdivep4[:,:,:,:,np.newaxis]),
                                     axis=4)
-        termsep = np.ma.concatenate((   -xdivep1[:,:,:,:,np.newaxis],
-                                        -xdivep3[:,:,:,:,np.newaxis],
-                                        -xdivep4[:,:,:,:,np.newaxis],
-                                        -ydivep1[:,:,:,:,np.newaxis],
-                                        -ydivep3[:,:,:,:,np.newaxis],
-                                        -bdivep1[:,:,:,:,np.newaxis],
-                                        -bdivep3[:,:,:,:,np.newaxis],
-                                        -bdivep4[:,:,:,:,np.newaxis]),
-                                        axis=4)
 
-        terms[np.isinf(terms)] = np.nan
-        termsep[np.isinf(termsep)] = np.nan
-        termsm = np.ma.apply_over_axes(np.nanmean, terms, meanax)
-        termsepm = np.ma.apply_over_axes(np.nanmean, termsep, meanax)
+        termsm = np.nanmean(terms,axis=meanax)
+        termsepm = np.nanmean(termsep,axis=meanax)
 
         X = dimu[keepax[1]]
         Y = dimu[keepax[0]]
         if 1 in keepax:
-            em = np.ma.apply_over_axes(np.mean, em, meanax)
-            elm = np.ma.apply_over_axes(np.mean, elm, meanax)
+            em = np.nanmean(em,axis=meanax)
+            elm = np.nanmean(elm,axis=meanax)
             Y = elm.squeeze()
             X = np.meshgrid(X,dimu[1])[0]
 
         P = termsm.squeeze()
-        P = np.ma.filled(P.astype(float), np.nan)
         Pep = termsepm.squeeze()
-        Pep = np.ma.filled(Pep.astype(float), np.nan)
-        X = np.ma.filled(X.astype(float), np.nan)
-        Y = np.ma.filled(Y.astype(float), np.nan)
         if not calledfrompv: 
             np.savez('twamomx_complete_terms', X=X,Y=Y,P=P,Pep=Pep)
     else:
