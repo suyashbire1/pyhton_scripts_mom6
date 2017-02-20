@@ -7,7 +7,7 @@ from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
 
 def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
-      alreadysaved=False,xyasindices=False,calledfrompv=False):
+      alreadysaved=False,xyasindices=False,calledfrompv=False, htol=1e-3):
 
     if not alreadysaved:
         keepax = ()
@@ -44,24 +44,24 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         nt_const = dimv[0].size
         t0 = time.time()
 
-        em = fh.variables['e'][0:,zs:ze,ys:ye,xs:xe]
+        em = fh2.variables['e'][0:,zs:ze,ys:ye,xs:xe]
         elm = 0.5*(em[:,0:-1,:,:]+em[:,1:,:,:])
 
-        vh = fh2.variables['vh'][0:,zs:ze,ys:ye,xs:xe]
-        h_cv = fh.variables['h_Cv'][0:,zs:ze,ys:ye,xs:xe]
-        h_cv = np.ma.masked_array(h_cv, mask=(h_cv<1e-3))
+        vh = fh.variables['vh_masked'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
+        h_cv = fh.variables['h_Cv'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
+        h_cv[h_cv < htol] = np.nan
         h_vm = h_cv
         vtwa = vh/h_cv/dxcv
 
-        vhforxdiff = fh2.variables['vh'][0:,zs:ze,ys:ye,xs-1:xe]
-        h_cvforxdiff = fh.variables['h_Cv'][0:,zs:ze,ys:ye,xs-1:xe]
-        h_cvforxdiff = np.ma.masked_array(h_cvforxdiff, mask=(h_cvforxdiff<1e-3))
+        vhforxdiff = fh.variables['vh_masked'][0:,zs:ze,ys:ye,xs-1:xe].mean(axis=0,keepdims=True)
+        h_cvforxdiff = fh.variables['h_Cv'][0:,zs:ze,ys:ye,xs-1:xe].mean(axis=0,keepdims=True)
+        h_cvforxdiff[h_cvforxdiff < htol] = np.nan
         vtwaforxdiff = vhforxdiff/h_cvforxdiff#/dxcvforxdiff
-        vtwaforxdiff = np.ma.concatenate((vtwaforxdiff,vtwaforxdiff[:,:,:,-1:]),axis=3)
+        vtwaforxdiff = np.concatenate((vtwaforxdiff,vtwaforxdiff[:,:,:,-1:]),axis=3)
 
-        vhforydiff = fh2.variables['vh'][0:,zs:ze,ys-1:ye+1,xs:xe]
-        h_cvforydiff = fh.variables['h_Cv'][0:,zs:ze,ys-1:ye+1,xs:xe]
-        h_cvforydiff = np.ma.masked_array(h_cvforydiff, mask=(h_cvforydiff<1e-3))
+        vhforydiff = fh.variables['vh_masked'][0:,zs:ze,ys-1:ye+1,xs:xe].mean(axis=0,keepdims=True)
+        h_cvforydiff = fh.variables['h_Cv'][0:,zs:ze,ys-1:ye+1,xs:xe].mean(axis=0,keepdims=True)
+        h_cvforydiff[h_cvforydiff < htol] = np.nan
         vtwaforydiff = vhforydiff/h_cvforydiff#/dxcvforydiff
 
         vtwax = np.diff(vtwaforxdiff,axis=3)/dxbu/dybu
@@ -73,40 +73,49 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         hvmy = np.diff(vhforydiff,axis=2)/dyt/dxt
         hvmy = 0.5*(hvmy[:,:,:-1,:] + hvmy[:,:,1:,:])
 
-        hum = fh.variables['hu_Cv'][0:,zs:ze,ys:ye,xs:xe]
-        humforxdiff = fh.variables['hu_Cv'][0:,zs:ze,ys:ye,xs-1:xe]*dycvforxdiff
-        humforxdiff = np.concatenate((humforxdiff,-humforxdiff[:,:,:,-1:]),axis=3)
-        humx = np.diff(humforxdiff,axis=3)/dxbu/dybu
-        humx = 0.5*(humx[:,:,:,:-1] + humx[:,:,:,1:])
+        uh = fh.variables['uh_masked'][0:,zs:ze,ys:ye+1,xs-1:xe].filled(np.nan).mean(axis=0,keepdims=True)
+        hum = 0.25*(uh[:,:,:-1,:-1] + uh[:,:,:-1,1:] + uh[:,:,1:,:-1] +
+                uh[:,:,1:,1:])/dycv
+
+        humx = np.diff(np.nan_to_num(uh),axis=3)/dxt/dyt
+        humx = 0.5*(humx[:,:,:-1,:] + humx[:,:,1:,:])
 
         huvxphvvym = (fh.variables['twa_huvxpt'][0:,zs:ze,ys:ye,xs:xe] +
-                fh.variables['twa_hvvymt'][0:,zs:ze,ys:ye,xs:xe])
-        hvv = fh.variables['hvv_T'][0:,zs:ze,ys:ye+1,xs:xe]*dxt
-        hvvym = np.diff(hvv,axis=2)/dycv/dxcv
+                fh.variables['twa_hvvymt'][0:,zs:ze,ys:ye,xs:xe]).mean(axis=0,keepdims=True)
+        v = fh2.variables['v'][0:,zs:ze,ys-1:ye+1,xs:xe].mean(axis=0,keepdims=True)
+        hvv = v*vhforydiff
+        hvvym = np.diff(hvv,axis=2)/dxt/dyt
+        hvvym = 0.5*(hvvym[:,:,:-1,:] + hvvym[:,:,1:,:])
+        #hvv = fh.variables['hvv_T'][0:,zs:ze,ys:ye+1,xs:xe]*dxt
+        #hvvym = np.diff(hvv,axis=2)/dycv/dxcv
         huvxm = huvxphvvym - hvvym
 
-        vtwaforvdiff = np.ma.concatenate((vtwa[:,[0],:,:],vtwa),axis=1)
+        vtwaforvdiff = np.concatenate((vtwa[:,[0],:,:],vtwa),axis=1)
         vtwab = np.diff(vtwaforvdiff,axis=1)/db[:,np.newaxis,np.newaxis]
-        vtwab = np.ma.concatenate((vtwab,np.zeros([vtwab.shape[0],1,vtwab.shape[2],vtwab.shape[3]])),axis=1)
+        vtwab = np.concatenate((vtwab,np.zeros([vtwab.shape[0],1,vtwab.shape[2],vtwab.shape[3]])),axis=1)
         vtwab = 0.5*(vtwab[:,0:-1,:,:] + vtwab[:,1:,:,:])
 
-        hwb_v = fh.variables['hwb_Cv'][0:,zs:ze,ys:ye,xs:xe]
-        hwm_v = fh.variables['hw_Cv'][0:,zs:ze,ys:ye,xs:xe]
+        hwb = fh2.variables['wd'][0:,zs:ze,ys:ye+1,xs:xe].mean(axis=0,keepdims=True)
+        hwb = np.diff(hwb,axis=1)
+        hwb_v = 0.5*(hwb[:,:,:-1,:] + hwb[:,:,1:,:])
+        hwm_v = hwb_v*dbl[:,np.newaxis,np.newaxis]
+        #hwb_v = fh.variables['hwb_Cv'][0:,zs:ze,ys:ye,xs:xe]
+        #hwm_v = fh.variables['hw_Cv'][0:,zs:ze,ys:ye,xs:xe]
 
-        esq = fh.variables['esq'][0:,zs:ze,ys:ye+1,xs:xe]
-        emforydiff = fh.variables['e'][0:,zs:ze,ys:ye+1,xs:xe]
+        esq = fh.variables['esq'][0:,zs:ze,ys:ye+1,xs:xe].mean(axis=0,keepdims=True)
+        emforydiff = fh2.variables['e'][0:,zs:ze,ys:ye+1,xs:xe].mean(axis=0,keepdims=True)
         elmforydiff = 0.5*(emforydiff[:,0:-1,:,:]+emforydiff[:,1:,:,:])
         edlsqm = (esq - elmforydiff**2)
         edlsqmy = np.diff(edlsqm,axis=2)/dycv
 
-        hpfv = fh.variables['twa_hpfv'][0:,zs:ze,ys:ye,xs:xe]
-        pfvm = fh.variables['pfv_masked'][0:,zs:ze,ys:ye,xs:xe]
+        hpfv = fh.variables['twa_hpfv'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
+        pfvm = fh.variables['pfv_masked'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
         edpfvdmb = -hpfv + h_cv*pfvm - 0.5*edlsqmy*dbl[:,np.newaxis,np.newaxis]
 
-        hmfum = fh.variables['twa_hmfu'][0:1,zs:ze,ys:ye,xs:xe]
-        hvwbm = fh.variables['twa_hvwb'][0:1,zs:ze,ys:ye,xs:xe]
-        hdiffvm = fh.variables['twa_hdiffv'][0:1,zs:ze,ys:ye,xs:xe]
-        hdvdtviscm = fh.variables['twa_hdvdtvisc'][0:1,zs:ze,ys:ye,xs:xe]
+        hmfum = fh.variables['twa_hmfu'][0:1,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
+        hvwbm = fh.variables['twa_hvwb'][0:1,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
+        hdiffvm = fh.variables['twa_hdiffv'][0:1,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
+        hdvdtviscm = fh.variables['twa_hdvdtvisc'][0:1,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
         fh2.close()
         fh.close()
 
@@ -135,7 +144,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         Y1twa = hdiffvm/h_vm
         Y2twa = hdvdtviscm/h_vm
 
-        terms = np.ma.concatenate(( -advx[:,:,:,:,np.newaxis],
+        terms = np.concatenate(( -advx[:,:,:,:,np.newaxis],
                                     -advy[:,:,:,:,np.newaxis],
                                     -advb[:,:,:,:,np.newaxis],
                                     cor[:,:,:,:,np.newaxis],
@@ -146,7 +155,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
                                     Y1twa[:,:,:,:,np.newaxis],
                                     Y2twa[:,:,:,:,np.newaxis]),
                                     axis=4)
-        termsep = np.ma.concatenate((   -xdivep1[:,:,:,:,np.newaxis],
+        termsep = np.concatenate((   -xdivep1[:,:,:,:,np.newaxis],
                                         -xdivep3[:,:,:,:,np.newaxis],
                                         -ydivep1[:,:,:,:,np.newaxis],
                                         -ydivep3[:,:,:,:,np.newaxis],
@@ -156,25 +165,19 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
                                         -bdivep4[:,:,:,:,np.newaxis]),
                                         axis=4)
 
-        terms[np.isinf(terms)] = np.nan
-        termsep[np.isinf(termsep)] = np.nan
-        termsm = np.ma.apply_over_axes(np.nanmean, terms, meanax)
-        termsepm = np.ma.apply_over_axes(np.nanmean, termsep, meanax)
+        termsm = np.nanmean(terms,meanax)
+        termsepm = np.nanmean(termsep,meanax)
 
         X = dimv[keepax[1]]
         Y = dimv[keepax[0]]
         if 1 in keepax:
-            em = np.ma.apply_over_axes(np.mean, em, meanax)
-            elm = np.ma.apply_over_axes(np.mean, elm, meanax)
+            em = np.mean(em,meanax)
+            elm = np.mean(elm,meanax)
             Y = elm.squeeze()
             X = np.meshgrid(X,dimv[1])[0]
 
         P = termsm.squeeze()
-        P = np.ma.filled(P.astype(float), np.nan)
         Pep = termsepm.squeeze()
-        Pep = np.ma.filled(Pep.astype(float), np.nan)
-        X = np.ma.filled(X.astype(float), np.nan)
-        Y = np.ma.filled(Y.astype(float), np.nan)
         if not calledfrompv: 
             np.savez('twamomy_complete_terms', X=X,Y=Y,P=P,Pep=Pep)
     else:
