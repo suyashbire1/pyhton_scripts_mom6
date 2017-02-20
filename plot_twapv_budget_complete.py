@@ -10,16 +10,16 @@ from plot_twamomy_budget_complete_direct_newest import extract_twamomy_terms
 from plot_twauvpv import getuv
 
 def getutwa(fhgeo, fh, fh2, sl):
-    uh = fh2.variables['uh'][sl]
-    h_cu = fh.variables['h_Cu'][sl]
+    uh = fh2.variables['uh'][sl].filled(0).mean(axis=0,keepdims=True)
+    h_cu = fh.variables['h_Cu'][sl].filled(0).mean(axis=0,keepdims=True)
     h_cu = np.ma.masked_array(h_cu,mask=(h_cu<1e-3))
     dycu = fhgeo.variables['dyCu'][sl[2:]]
     utwa = uh/h_cu/dycu
     return utwa, h_cu
 
 def getvtwa(fhgeo, fh, fh2, sl):
-    vh = fh2.variables['vh'][sl]
-    h_cv = fh.variables['h_Cv'][sl]
+    vh = fh2.variables['vh'][sl].mean(axis=0,keepdims=True)
+    h_cv = fh.variables['h_Cv'][sl].mean(axis=0,keepdims=True)
     h_cv = np.ma.masked_array(h_cv,mask=(h_cv<1e-3))
     dxcv = fhgeo.variables['dxCv'][sl[2:]]
     vtwa = vh/dxcv/h_cv
@@ -81,7 +81,7 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
 
         xmom = xmom[np.newaxis,:,:,:,:]
         ymom = ymom[np.newaxis,:,:,:,:]
-        ymom = np.concatenate((ymom,-ymom[:,:,:,-1:]),axis=3)
+        ymom = np.concatenate((ymom,ymom[:,:,:,-1:]),axis=3)
 
         bxppvflx = np.sum(xmom[:,:,:,:,[0,1,3,4]],axis=4)
         pvhash1,_ = getpv(fhgeo, fh, fh2, xs, xe, ys-1, ye+1)
@@ -90,7 +90,7 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         vtwa1 = 0.5*(vtwa1[:,:,:,:-1] + vtwa1[:,:,:,1:])
         pvhashvtwa = pvhash1*vtwa1
         sl1 = np.s_[:,zs:ze,ys:ye+1,xs:xe]
-        h_cu1 = fh.variables['h_Cv'][sl1]
+        h_cu1 = fh.variables['h_Cu'][sl1].filled(np.nan).mean(axis=0,keepdims=True)
         h_cu1 = np.ma.masked_array(h_cu1,mask=(h_cu1<1e-3))
         pvflxx = h_cu1*(pvhashvtwa[:,:,:-1,:]+pvhashvtwa[:,:,1:,:])/2
         
@@ -102,7 +102,7 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         pvhashutwa = pvhash1*utwa1
         pvhashutwa[:,:,:,-1] = 0.0
         sl1 = np.s_[:,zs:ze,ys:ye,xs:xe]
-        h_cv1 = fh.variables['h_Cv'][sl1]
+        h_cv1 = fh.variables['h_Cv'][sl1].mean(axis=0,keepdims=True)
         h_cv1 = np.ma.masked_array(h_cv1,mask=(h_cv1<1e-3))
         pvflxy = h_cv1*(pvhashutwa[:,:,:,:-1]+pvhashutwa[:,:,:,1:])/2
         pvflxy = np.concatenate((pvflxy,pvflxy[:,:,:,-1:]),axis=3)
@@ -122,7 +122,7 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         slyp = np.s_[:,:,ys:ye+1,xs:xe]
         ah1 = fhgeo.variables['Ah'][slyp[2:]]
         slxmyp = np.s_[:,:,ys:ye+1,xs-1:xe]
-        uh = fh2.variables['uh'][slxmyp].filled(0)
+        uh = fh2.variables['uh'][slxmyp].filled(0).mean(axis=0,keepdims=True)
         uhx = np.diff(uh,axis=3)/ah1
         uhx = np.concatenate((uhx,uhx[:,:,:,-1:]),axis=3)
         uhx = 0.25*(uhx[:,:,:-1,:-1] + uhx[:,:,:-1,1:] + uhx[:,:,1:,:-1] +
@@ -130,14 +130,14 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         pv1y[:,:,:,:,0] += pvhash*uhx
 
         slymp = np.s_[:,:,ys-1:ye+1,xs:xe]
-        vh = fh2.variables['vh'][slymp]
+        vh = fh2.variables['vh'][slymp].mean(axis=0,keepdims=True)
         vhy = np.diff(vh,axis=2)/ah1
         vhy = np.concatenate((vhy,vhy[:,:,:,-1:]),axis=3)
         vhy = 0.25*(vhy[:,:,:-1,:-1] + vhy[:,:,:-1,1:] + vhy[:,:,1:,:-1] +
                 vhy[:,:,1:,1:])
         pv1x[:,:,:,:,0] += pvhash*vhy
 
-        wd = fh2.variables['wd'][slyp]
+        wd = fh2.variables['wd'][slyp].mean(axis=0,keepdims=True)
         wdb = np.diff(wd,axis=1)
         wdb = np.concatenate((wdb,wdb[:,:,:,-1:]),axis=3)
         wdb = 0.25*(wdb[:,:,:-1,:-1] + wdb[:,:,:-1,1:] + wdb[:,:,1:,:-1] +
@@ -159,7 +159,6 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         pvnewmask[:,:,:,-1:] = 1
         pvnew = np.ma.masked_array(pvnew, mask=(pvnewmask==1))
 
-
         pv = np.ma.apply_over_axes(np.nanmean, pv, meanax)
         pvnew = np.ma.apply_over_axes(np.nanmean, pvnew, meanax)
         pvhash = np.ma.apply_over_axes(np.nanmean, pvhash, meanax)
@@ -167,11 +166,11 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         X = dimq[keepax[1]]
         Y = dimq[keepax[0]]
         if 1 in keepax:
-            em = fh.variables['e'][0:1,zs:ze,ys:ye,xs:xe]/nt_const
+            em = fh2.variables['e'][0:1,zs:ze,ys:ye,xs:xe]/nt_const
             for i in range(1,nt_const):
-                em += fh.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]/nt_const
-                sys.stdout.write('\r'+str(int((i+1)/nt_const*100))+'% done...')
-                sys.stdout.flush()
+                em += fh2.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]/nt_const
+                #sys.stdout.write('\r'+str(int((i+1)/nt_const*100))+'% done...')
+                #sys.stdout.flush()
 
             elm = 0.5*(em[:,0:-1,:,:]+em[:,1:,:,:])
             em = np.ma.apply_over_axes(np.mean, em, meanax)
@@ -205,6 +204,7 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             xstart,xend,ystart,yend,zs,ze,meanax, alreadysaved)
     cmax = np.nanpercentile(P,[cmaxpercfactor,100-cmaxpercfactor])
     cmax = np.max(np.fabs(cmax))
+    print(cmax)
     fig,ax = plt.subplots(np.int8(np.ceil(P.shape[-1]/2)),2,
                           sharex=True,sharey=True,figsize=(12, 9))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)',
@@ -258,7 +258,7 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
         plt.show()
 
     fig,ax = plt.subplots(np.int8(np.ceil(Pnew.shape[-1]/2)),2,
-                          sharex=True,sharey=True,figsize=(12, 9))
+                          sharex=True,sharey=True,figsize=(12, 18))
 
     cmax = np.nanpercentile(Pnew,
             [cmaxpercfactorPnew,100-cmaxpercfactorPnew])
@@ -300,4 +300,3 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
                     format='eps', transparent=False, bbox_inches='tight')
     else:
         plt.show()
-

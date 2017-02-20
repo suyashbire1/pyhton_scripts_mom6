@@ -73,7 +73,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         hvmy = np.diff(vhforydiff,axis=2)/dyt/dxt
         hvmy = 0.5*(hvmy[:,:,:-1,:] + hvmy[:,:,1:,:])
 
-        uh = fh.variables['uh_masked'][0:,zs:ze,ys:ye+1,xs-1:xe].filled(np.nan).mean(axis=0,keepdims=True)
+        uh = fh.variables['uh_masked'][0:,zs:ze,ys:ye+1,xs-1:xe].filled(0).mean(axis=0,keepdims=True)
         hum = 0.25*(uh[:,:,:-1,:-1] + uh[:,:,:-1,1:] + uh[:,:,1:,:-1] +
                 uh[:,:,1:,1:])/dycv
 
