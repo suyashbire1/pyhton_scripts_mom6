@@ -53,7 +53,8 @@ def m6plot(data,ax=None,**plotkwargs):
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_title(title)
-    ax.text(0.05,0.7,txt,transform=ax.transAxes)
+    tx = ax.text(0.05,0.7,txt,transform=ax.transAxes)
+    tx.set_fontsize(12)
     if inverty:
         ax.invert_yaxis()
 

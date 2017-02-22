@@ -89,14 +89,14 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
 
         huuxphuvym = (fh.variables['twa_huuxpt'][0:,zs:ze,ys:ye,xs:xe] +
                 fh.variables['twa_huvymt'][0:,zs:ze,ys:ye,xs:xe]).filled(np.nan).mean(axis=0,keepdims=True)
-        u = fh2.variables['u'][0:,zs:ze,ys:ye,xs-1:xe].filled(np.nan).mean(axis=0,keepdims=True)
-        huu = uhforxdiff*u
-        huuxm = np.diff(np.nan_to_num(huu),axis=3)/dxt/dyt
-        huuxm = np.concatenate((huuxm,-huuxm[:,:,:,-1:]),axis=3)
-        huuxm = 0.5*(huuxm[:,:,:,:-1] + huuxm[:,:,:,1:])
-        #huu = fh.variables['huu_T'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
-        #huu = np.concatenate((huu,-huu[:,:,:,-1:]),axis=3)
-        #huuxm = np.diff(huu,axis=3)/dxcu/dycu
+        #u = fh.variables['u_masked'][0:,zs:ze,ys:ye,xs-1:xe].filled(np.nan).mean(axis=0,keepdims=True)
+        #huu = uhforxdiff*u
+        #huuxm = np.diff(np.nan_to_num(huu),axis=3)/dxt/dyt
+        #huuxm = np.concatenate((huuxm,-huuxm[:,:,:,-1:]),axis=3)
+        #huuxm = 0.5*(huuxm[:,:,:,:-1] + huuxm[:,:,:,1:])
+        huu = fh.variables['huu_T'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)*dyt
+        huu = np.concatenate((huu,-huu[:,:,:,-1:]),axis=3)
+        huuxm = np.diff(huu,axis=3)/dxcu/dycu
         huvym = huuxphuvym - huuxm
 
         utwaforvdiff = np.concatenate((utwa[:,[0],:,:],utwa),axis=1)
@@ -116,7 +116,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         edlsqmx = np.diff(edlsqm,axis=3)/dxcu
 
         hpfu = fh.variables['twa_hpfu'][0:,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
-        pfum = fh.variables['pfu_masked'][0:,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
+        pfum = fh2.variables['PFu'][0:,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
         edpfudmb = -hpfu + h_cu*pfum - 0.5*edlsqmx*dbl[:,np.newaxis,np.newaxis]
 
         hfvm = fh.variables['twa_hfv'][0:1,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
@@ -213,9 +213,9 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r'$-\hat{\varpi}\hat{u}_{\tilde{b}}$',
             r'$f\hat{v}$',
             r'$-\overline{m_{\tilde{x}}}$',
-            r"""-$\frac{1}{\overline{h}}(\widehat{u ^{\prime \prime} u ^{\prime \prime} } +\frac{1}{2}\overline{\zeta ^{\prime 2}})_{\tilde{x}}$""",
-            r"""-$\frac{1}{\overline{h}}(\widehat{u ^{\prime \prime} v ^{\prime \prime}})_{\tilde{y}}$""",
-            r"""-$\frac{1}{\overline{h}}(\widehat{u ^{\prime \prime} \varpi ^{\prime \prime}} + \overline{\zeta ^\prime m_{\tilde{x}}^\prime})_{\tilde{b}}$""",
+            r"""-$\frac{1}{\overline{h}}(\overline{h}\widehat{u ^{\prime \prime} u ^{\prime \prime} } +\frac{1}{2}\overline{\zeta ^{\prime 2}})_{\tilde{x}}$""",
+            r"""-$\frac{1}{\overline{h}}(\overline{h}\widehat{u ^{\prime \prime} v ^{\prime \prime}})_{\tilde{y}}$""",
+            r"""-$\frac{1}{\overline{h}}(\overline{h}\widehat{u ^{\prime \prime} \varpi ^{\prime \prime}} + \overline{\zeta ^\prime m_{\tilde{x}}^\prime})_{\tilde{b}}$""",
             r'$\widehat{X^H}$',
             r'$\widehat{X^V}$']
 

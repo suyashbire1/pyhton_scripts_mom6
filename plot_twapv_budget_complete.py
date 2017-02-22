@@ -111,11 +111,12 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         by = byppvflx + pvflxy
 
         xmom1 = xmom[:,:,:,:,[2,5,6,7,8,9]]
-        xmom1 = np.concatenate((pvflxx[:,:,:,:,np.newaxis], xmom1, bx[:,:,:,:,np.newaxis]), axis = 4)
+        xmom1 = np.concatenate((+pvflxx[:,:,:,:,np.newaxis], xmom1, bx[:,:,:,:,np.newaxis]), axis = 4)
         ymom1 = ymom[:,:,:,:,[2,5,6,7,8,9]]
         ymom1 = np.concatenate((-pvflxy[:,:,:,:,np.newaxis], ymom1, by[:,:,:,:,np.newaxis]), axis = 4) 
 
-        pv = (-np.diff(xmom*dxcu[:,:,np.newaxis],axis=2) + np.diff(ymom*dycv[:,:,np.newaxis],axis=3))/aq[:,:,np.newaxis]
+        #pv = (-np.diff(xmom*dxcu[:,:,np.newaxis],axis=2) + np.diff(ymom*dycv[:,:,np.newaxis],axis=3))/aq[:,:,np.newaxis]
+        pv = -np.diff(xmom,axis=2)/dybu[:,:,np.newaxis] + np.diff(ymom,axis=3)/dxbu[:,:,np.newaxis]
         pv1x = -np.diff(xmom1*dxcu[:,:,np.newaxis],axis=2)/aq[:,:,np.newaxis]
         pv1y =  np.diff(ymom1*dycv[:,:,np.newaxis],axis=3)/aq[:,:,np.newaxis]
 
@@ -144,6 +145,7 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
                 wdb[:,:,1:,1:])
         pv3 = pvhash*wdb
         pv3 = pv3[:,:,:,:,np.newaxis]
+        hq[hq<10] = np.nan
         pvnew = np.concatenate((pv1y[:,:,:,:,:1],
                                 pv1x[:,:,:,:,:1],
                                 pv3,
@@ -204,7 +206,6 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             xstart,xend,ystart,yend,zs,ze,meanax, alreadysaved)
     cmax = np.nanpercentile(P,[cmaxpercfactor,100-cmaxpercfactor])
     cmax = np.max(np.fabs(cmax))
-    print(cmax)
     fig,ax = plt.subplots(np.int8(np.ceil(P.shape[-1]/2)),2,
                           sharex=True,sharey=True,figsize=(12, 9))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)',
@@ -214,9 +215,9 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r'$(\hat{\varpi}\hat{u}_{\tilde{b}})_{\tilde{y}}$', 
             r'$(-f\hat{v})_{\tilde{y}}$', 
             r'$(\overline{m_{\tilde{x}}})_{\tilde{y}}$', 
-            r"""$(\frac{1}{\overline{h}}(\widehat{u''u''}+\frac{1}{2}\overline{\zeta ' ^2})_{\tilde{x}})_{\tilde{y}}$""", 
-            r"""$(\frac{1}{\overline{h}}(\widehat{u''v''})_{\tilde{y}}$""",
-            r"""$(\frac{1}{\overline{h}}(\widehat{u''\varpi ''} + \overline{\zeta 'm_{\tilde{x}}'})_{\tilde{b}})_{\tilde{y}}$""",
+            r"""$(\frac{1}{\overline{h}}(\overline{h}\widehat{u^{\prime \prime}u^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{x}})_{\tilde{y}}$""", 
+            r"""$(\frac{1}{\overline{h}}(\overline{h}\widehat{u^{\prime \prime}v^{\prime \prime}})_{\tilde{y}}$""",
+            r"""$(\frac{1}{\overline{h}}(\overline{h}\widehat{u^{\prime \prime}\varpi^{\prime \prime}} + \overline{\zeta^{\prime}m_{\tilde{x}}^{\prime}})_{\tilde{b}})_{\tilde{y}}$""",
             r'$(-\widehat{X^H})_{\tilde{y}}$', 
             r'$(-\widehat{X^V})_{\tilde{y}}$']
     laby = [ r'$(-\hat{u}\hat{v}_{\tilde{x}})_{\tilde{x}}$', 
@@ -224,9 +225,9 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r'$(-\hat{\varpi}\hat{v}_{\tilde{b}})_{\tilde{x}}$', 
             r'$(-f\hat{u})_{\tilde{x}}$', 
             r'$(-\overline{m_{\tilde{y}}})_{\tilde{x}}$', 
-            r"""$(-\frac{1}{\overline{h}}(\widehat{u''v''})_{\tilde{x}})_{\tilde{x}}$""", 
-            r"""$(-\frac{1}{\overline{h}}(\widehat{v''v''}+\frac{1}{2}\overline{\zeta ' ^2})_{\tilde{y}})_{\tilde{x}}$""",
-            r"""$(-\frac{1}{\overline{h}}(\widehat{v''\varpi ''} + \overline{\zeta 'm_{\tilde{y}}'})_{\tilde{b}})_{\tilde{x}}$""",
+            r"""$(-\frac{1}{\overline{h}}(\overline{h}\widehat{u^{\prime \prime}v^{\prime \prime}})_{\tilde{x}})_{\tilde{x}}$""", 
+            r"""$(-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}v^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{y}})_{\tilde{x}}$""",
+            r"""$(-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}\varpi^{\prime \prime}} + \overline{\zeta^{\prime}m_{\tilde{y}}^{\prime}})_{\tilde{b}})_{\tilde{x}}$""",
             r'$(\widehat{Y^H})_{\tilde{x}}$', 
             r'$(\widehat{Y^V})_{\tilde{x}}$']
     for i in range(P.shape[-1]):
@@ -264,10 +265,27 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             [cmaxpercfactorPnew,100-cmaxpercfactorPnew])
     cmax = np.max(np.fabs(cmax))
 
+    lab = [ r"$-\hat{u}\Pi^{\#}_{\tilde{x}}$",
+            r"$-\hat{v}\Pi^{\#}_{\tilde{y}}$",
+            r"$-\Pi^{\#}(\bar{h} \hat{\varpi})_{\tilde{b}}$",
+            r"$\frac{(\hat{\varpi}\hat{u}_{\tilde{b}})_{\tilde{y}}}{\bar{h}}$",
+            r"""$\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{u^{\prime \prime}u^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{x}})_{\tilde{y}}$""", 
+            r"""$\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{u^{\prime \prime}v^{\prime \prime}})_{\tilde{y}})_{\tilde{y}}$""",
+            r"""$\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{u^{\prime \prime}\varpi^{\prime \prime}} + \overline{\zeta^{\prime}m_{\tilde{x}}^{\prime}})_{\tilde{b}})_{\tilde{y}}$""",
+            r'$-\frac{1}{\bar{h}}(\widehat{X^H})_{\tilde{y}}$', 
+            r'$-\frac{1}{\bar{h}}(\widehat{X^V})_{\tilde{y}}$',
+            r'$\frac{(-\hat{\varpi}\hat{v}_{\tilde{b}})_{\tilde{x}}}{\bar{h}}$', 
+            r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{u^{\prime \prime}v^{\prime \prime}})_{\tilde{x}})_{\tilde{x}}$""", 
+            r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{v^{\prime \prime}v^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{y}})_{\tilde{x}}$""",
+            r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{v^{\prime \prime}\varpi^{\prime \prime}} + \overline{\zeta^{\prime}m_{\tilde{y}}^{\prime}})_{\tilde{b}})_{\tilde{x}}$""",
+            r'$\frac{1}{\bar{h}}(\widehat{Y^H})_{\tilde{x}}$', 
+            r'$\frac{1}{\bar{h}}(\widehat{Y^V})_{\tilde{x}}$',
+            r'$B_{\tilde{x} \tilde{y}} - B_{\tilde{y} tilde{x}}$']
+
     for i in range(Pnew.shape[-1]):
         axc = ax.ravel()[i]
         im = m6plot((X,Y,Pnew[:,:,i]),axc,vmax=cmax,vmin=-cmax,
-                ylim=(-2500,0),
+                ylim=(-2500,0), txt=lab[i],
                 cmap='RdBu_r', cbar=False)
         
         if i % 2 == 0:

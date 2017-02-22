@@ -82,12 +82,12 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
 
         huvxphvvym = (fh.variables['twa_huvxpt'][0:,zs:ze,ys:ye,xs:xe] +
                 fh.variables['twa_hvvymt'][0:,zs:ze,ys:ye,xs:xe]).mean(axis=0,keepdims=True)
-        v = fh2.variables['v'][0:,zs:ze,ys-1:ye+1,xs:xe].mean(axis=0,keepdims=True)
-        hvv = v*vhforydiff
-        hvvym = np.diff(hvv,axis=2)/dxt/dyt
-        hvvym = 0.5*(hvvym[:,:,:-1,:] + hvvym[:,:,1:,:])
-        #hvv = fh.variables['hvv_T'][0:,zs:ze,ys:ye+1,xs:xe]*dxt
-        #hvvym = np.diff(hvv,axis=2)/dycv/dxcv
+        #v = fh.variables['v_masked'][0:,zs:ze,ys-1:ye+1,xs:xe].mean(axis=0,keepdims=True)
+        #hvv = v*vhforydiff
+        #hvvym = np.diff(hvv,axis=2)/dxt/dyt
+        #hvvym = 0.5*(hvvym[:,:,:-1,:] + hvvym[:,:,1:,:])
+        hvv = fh.variables['hvv_T'][0:,zs:ze,ys:ye+1,xs:xe]*dxt
+        hvvym = np.diff(hvv,axis=2)/dycv/dxcv
         huvxm = huvxphvvym - hvvym
 
         vtwaforvdiff = np.concatenate((vtwa[:,[0],:,:],vtwa),axis=1)
@@ -109,7 +109,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         edlsqmy = np.diff(edlsqm,axis=2)/dycv
 
         hpfv = fh.variables['twa_hpfv'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
-        pfvm = fh.variables['pfv_masked'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
+        pfvm = fh2.variables['PFv'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
         edpfvdmb = -hpfv + h_cv*pfvm - 0.5*edlsqmy*dbl[:,np.newaxis,np.newaxis]
 
         hmfum = fh.variables['twa_hmfu'][0:1,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
@@ -206,9 +206,9 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r'$-\hat{\varpi}\hat{v}_{\tilde{b}}$', 
             r'$-f\hat{u}$', 
             r'$-\overline{m_{\tilde{y}}}$', 
-            r"""$-\frac{1}{\overline{h}}(\widehat{u^{\prime \prime}v^{\prime \prime}})_{\tilde{x}}$""", 
-            r"""$-\frac{1}{\overline{h}}(\widehat{v^{\prime \prime}v^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{y}}$""",
-            r"""$-\frac{1}{\overline{h}}(\widehat{v^{\prime \prime}\varpi ^{\prime \prime}} + \overline{\zeta^\prime m_{\tilde{y}}^\prime})_{\tilde{b}}$""",
+            r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{u^{\prime \prime}v^{\prime \prime}})_{\tilde{x}}$""", 
+            r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}v^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{y}}$""",
+            r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}\varpi ^{\prime \prime}} + \overline{\zeta^\prime m_{\tilde{y}}^\prime})_{\tilde{b}}$""",
             r'$\widehat{Y^H}$', 
             r'$\widehat{Y^V}$']
 
