@@ -86,7 +86,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         #hvv = v*vhforydiff
         #hvvym = np.diff(hvv,axis=2)/dxt/dyt
         #hvvym = 0.5*(hvvym[:,:,:-1,:] + hvvym[:,:,1:,:])
-        hvv = fh.variables['hvv_T'][0:,zs:ze,ys:ye+1,xs:xe]*dxt
+        hvv = fh.variables['hvv_T'][0:,zs:ze,ys:ye+1,xs:xe].mean(axis=0,keepdims=True)*dxt
         hvvym = np.diff(hvv,axis=2)/dycv/dxcv
         huvxm = huvxphvvym - hvvym
 
