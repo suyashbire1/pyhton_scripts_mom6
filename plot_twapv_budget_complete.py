@@ -267,20 +267,20 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
 
     lab = [ r"$-\hat{u}\Pi^{\#}_{\tilde{x}}$",
             r"$-\hat{v}\Pi^{\#}_{\tilde{y}}$",
-            r"$-\Pi^{\#}(\bar{h} \hat{\varpi})_{\tilde{b}}$",
+            r"$\Pi^{\#}(\bar{h} \hat{\varpi})_{\tilde{b}}$",
             r"$\frac{(\hat{\varpi}\hat{u}_{\tilde{b}})_{\tilde{y}}}{\bar{h}}$",
             r"""$\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{u^{\prime \prime}u^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{x}})_{\tilde{y}}$""", 
             r"""$\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{u^{\prime \prime}v^{\prime \prime}})_{\tilde{y}})_{\tilde{y}}$""",
             r"""$\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{u^{\prime \prime}\varpi^{\prime \prime}} + \overline{\zeta^{\prime}m_{\tilde{x}}^{\prime}})_{\tilde{b}})_{\tilde{y}}$""",
             r'$-\frac{1}{\bar{h}}(\widehat{X^H})_{\tilde{y}}$', 
             r'$-\frac{1}{\bar{h}}(\widehat{X^V})_{\tilde{y}}$',
-            r'$\frac{(-\hat{\varpi}\hat{v}_{\tilde{b}})_{\tilde{x}}}{\bar{h}}$', 
+            r'$-\frac{(\hat{\varpi}\hat{v}_{\tilde{b}})_{\tilde{x}}}{\bar{h}}$', 
             r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{u^{\prime \prime}v^{\prime \prime}})_{\tilde{x}})_{\tilde{x}}$""", 
             r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{v^{\prime \prime}v^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{y}})_{\tilde{x}}$""",
             r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{v^{\prime \prime}\varpi^{\prime \prime}} + \overline{\zeta^{\prime}m_{\tilde{y}}^{\prime}})_{\tilde{b}})_{\tilde{x}}$""",
             r'$\frac{1}{\bar{h}}(\widehat{Y^H})_{\tilde{x}}$', 
             r'$\frac{1}{\bar{h}}(\widehat{Y^V})_{\tilde{x}}$',
-            r'$B_{\tilde{x} \tilde{y}} - B_{\tilde{y} tilde{x}}$']
+            r'$B_{\tilde{x} \tilde{y}} - B_{\tilde{y} \tilde{x}}$']
 
     for i in range(Pnew.shape[-1]):
         axc = ax.ravel()[i]

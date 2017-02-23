@@ -46,23 +46,25 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         dxcu1 = rdp1.getgeombyindx(fhgeo,xs,xe,ys-1,ye+1)[2][0]
         nt_const = dimu[0].size
         t0 = time.time()
+        dt = fh.variables['average_DT'][:]
+        dt = dt[:,np.newaxis,np.newaxis,np.newaxis]
 
-        em = fh2.variables['e'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
+        em = (fh2.variables['e'][0:,zs:ze,ys:ye,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
         elm = 0.5*(em[:,0:-1,:,:]+em[:,1:,:,:])
 
-        uh = fh.variables['uh_masked'][0:,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
-        h_cu = fh.variables['h_Cu'][0:,zs:ze,ys:ye,xs:xe].filled(0).mean(axis=0,keepdims=True)
+        uh = (fh.variables['uh_masked'][0:,zs:ze,ys:ye,xs:xe].filled(np.nan)*dt).sum(axis=0,keepdims=True)/np.sum(dt)
+        h_cu = (fh.variables['h_Cu'][0:,zs:ze,ys:ye,xs:xe].filled(0)*dt).sum(axis=0,keepdims=True)/np.sum(dt)
         h_cu[h_cu < htol] = np.nan
         h_um = h_cu
         utwa = uh/h_cu/dycu
 
-        uhforxdiff = fh.variables['uh_masked'][0:,zs:ze,ys:ye,xs-1:xe].filled(np.nan).mean(axis=0,keepdims=True)
-        h_cuforxdiff = fh.variables['h_Cu'][0:,zs:ze,ys:ye,xs-1:xe].filled(0).mean(axis=0,keepdims=True)
+        uhforxdiff = (fh.variables['uh_masked'][0:,zs:ze,ys:ye,xs-1:xe]*dt).filled(np.nan).sum(axis=0,keepdims=True)/np.sum(dt)
+        h_cuforxdiff = (fh.variables['h_Cu'][0:,zs:ze,ys:ye,xs-1:xe]*dt).filled(0).sum(axis=0,keepdims=True)/np.sum(dt)
         h_cuforxdiff[h_cuforxdiff < htol] = np.nan
         utwaforxdiff = uhforxdiff/h_cuforxdiff#/dycuforxdiff
 
-        uhforydiff = fh.variables['uh_masked'][0:,zs:ze,ys-1:ye+1,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
-        h_cuforydiff = fh.variables['h_Cu'][0:,zs:ze,ys-1:ye+1,xs:xe].filled(0).mean(axis=0,keepdims=True)
+        uhforydiff = (fh.variables['uh_masked'][0:,zs:ze,ys-1:ye+1,xs:xe]*dt).filled(np.nan).sum(axis=0,keepdims=True)/np.sum(dt)
+        h_cuforydiff = (fh.variables['h_Cu'][0:,zs:ze,ys-1:ye+1,xs:xe]*dt).filled(0).sum(axis=0,keepdims=True)/np.sum(dt)
         h_cuforydiff[h_cuforydiff < htol] = np.nan
         utwaforydiff = uhforydiff/h_cuforydiff#/dycuforydiff
 
@@ -77,24 +79,24 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         humx = np.concatenate((humx,-humx[:,:,:,[-1]]),axis=3)
         humx = 0.5*(humx[:,:,:,0:-1] + humx[:,:,:,1:])
 
-        hvm = fh.variables['vh_masked'][0:,zs:ze,ys-1:ye,xs:xe].mean(axis=0,keepdims=True)
+        hvm = (fh.variables['vh_masked'][0:,zs:ze,ys-1:ye,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
         hvm = np.concatenate((hvm,-hvm[:,:,:,-1:]),axis=3)
         hvm = 0.25*(hvm[:,:,:-1,:-1] + hvm[:,:,:-1,1:] + hvm[:,:,1:,:-1] +
                 hvm[:,:,1:,1:])/dxcu
 
-        hv = fh.variables['vh_masked'][0:,zs:ze,ys-1:ye,xs:xe].mean(axis=0,keepdims=True)
+        hv = (fh.variables['vh_masked'][0:,zs:ze,ys-1:ye,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
         hvmy = np.diff(hv,axis=2)/dxt/dyt
         hvmy = np.concatenate((hvmy,-hvmy[:,:,:,-1:]),axis=3)
         hvmy = 0.5*(hvmy[:,:,:,:-1] + hvmy[:,:,:,1:])
 
-        huuxphuvym = (fh.variables['twa_huuxpt'][0:,zs:ze,ys:ye,xs:xe] +
-                fh.variables['twa_huvymt'][0:,zs:ze,ys:ye,xs:xe]).filled(np.nan).mean(axis=0,keepdims=True)
+        huuxphuvym = (fh.variables['twa_huuxpt'][0:,zs:ze,ys:ye,xs:xe]*dt +
+                fh.variables['twa_huvymt'][0:,zs:ze,ys:ye,xs:xe]*dt).filled(np.nan).sum(axis=0,keepdims=True)/np.sum(dt)
         #u = fh.variables['u_masked'][0:,zs:ze,ys:ye,xs-1:xe].filled(np.nan).mean(axis=0,keepdims=True)
         #huu = uhforxdiff*u
         #huuxm = np.diff(np.nan_to_num(huu),axis=3)/dxt/dyt
         #huuxm = np.concatenate((huuxm,-huuxm[:,:,:,-1:]),axis=3)
         #huuxm = 0.5*(huuxm[:,:,:,:-1] + huuxm[:,:,:,1:])
-        huu = fh.variables['huu_T'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)*dyt
+        huu = (fh.variables['huu_T'][0:,zs:ze,ys:ye,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)*dyt
         huu = np.concatenate((huu,-huu[:,:,:,-1:]),axis=3)
         huuxm = np.diff(huu,axis=3)/dxcu/dycu
         huvym = huuxphuvym - huuxm
@@ -104,25 +106,25 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         utwab = np.concatenate((utwab,np.zeros(utwab[:,:1,:,:].shape)),axis=1)
         utwab = 0.5*(utwab[:,0:-1,:,:] + utwab[:,1:,:,:])
 
-        hwb = fh2.variables['wd'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
+        hwb = (fh2.variables['wd'][0:,zs:ze,ys:ye,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
         hwb = np.diff(hwb,axis=1)
         hwb = np.concatenate((hwb,-hwb[:,:,:,-1:]),axis=3)
         hwb_u = 0.5*(hwb[:,:,:,:-1] + hwb[:,:,:,1:])
         hwm_u = hwb_u*dbl[:,np.newaxis,np.newaxis]
 
-        esq = fh.variables['esq'][0:,zs:ze,ys:ye,xs:xe].mean(axis=0,keepdims=True)
+        esq = (fh.variables['esq'][0:,zs:ze,ys:ye,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
         edlsqm = (esq - elm**2)
         edlsqm = np.concatenate((edlsqm,edlsqm[:,:,:,-1:]),axis=3)
         edlsqmx = np.diff(edlsqm,axis=3)/dxcu
 
-        hpfu = fh.variables['twa_hpfu'][0:,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
-        pfum = fh2.variables['PFu'][0:,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
+        hpfu = (fh.variables['twa_hpfu'][0:,zs:ze,ys:ye,xs:xe]*dt).filled(np.nan).sum(axis=0,keepdims=True)/np.sum(dt)
+        pfum = (fh2.variables['PFu'][0:,zs:ze,ys:ye,xs:xe]*dt).filled(np.nan).sum(axis=0,keepdims=True)/np.sum(dt)
         edpfudmb = -hpfu + h_cu*pfum - 0.5*edlsqmx*dbl[:,np.newaxis,np.newaxis]
 
-        hfvm = fh.variables['twa_hfv'][0:1,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
-        huwbm = fh.variables['twa_huwb'][0:1,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
-        hdiffum = fh.variables['twa_hdiffu'][0:1,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
-        hdudtviscm = fh.variables['twa_hdudtvisc'][0:1,zs:ze,ys:ye,xs:xe].filled(np.nan).mean(axis=0,keepdims=True)
+        hfvm = (fh.variables['twa_hfv'][0:,zs:ze,ys:ye,xs:xe]*dt).filled(np.nan).sum(axis=0,keepdims=True)/np.sum(dt)
+        huwbm = (fh.variables['twa_huwb'][0:,zs:ze,ys:ye,xs:xe]*dt).filled(np.nan).sum(axis=0,keepdims=True)/np.sum(dt)
+        hdiffum = (fh.variables['twa_hdiffu'][0:,zs:ze,ys:ye,xs:xe]*dt).filled(np.nan).sum(axis=0,keepdims=True)/np.sum(dt)
+        hdudtviscm = (fh.variables['twa_hdudtvisc'][0:,zs:ze,ys:ye,xs:xe]*dt).filled(np.nan).sum(axis=0,keepdims=True)/np.sum(dt)
         fh2.close()
         fh.close()
 
