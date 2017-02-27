@@ -26,15 +26,24 @@ def m6plot(data,ax=None,**plotkwargs):
     xlim = plotkwargs.get('xlim',None)
     ylim = plotkwargs.get('ylim',None)
     savfil = plotkwargs.get('savfil',None)
+    ptype = plotkwargs.get('ptype','pcolormesh')
 
     X,Y,Z = data[0:3]
 
-    if bvnorm:
-        bounds = np.linspace(vmin, vmax, blevs)
-        norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
-        im = ax.pcolormesh(X,Y,Z,norm=norm,cmap=cmap,shading='flat')
-    else:
-        im = ax.pcolormesh(X,Y,Z,vmax=vmax,vmin=vmin,cmap=cmap,shading='flat')
+    if ptype == 'pcolormesh':
+        if bvnorm:
+            bounds = np.linspace(vmin, vmax, blevs)
+            norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
+            im = ax.pcolormesh(X,Y,Z,norm=norm,cmap=cmap,shading='flat')
+        else:
+            im = ax.pcolormesh(X,Y,Z,vmax=vmax,vmin=vmin,cmap=cmap,shading='flat')
+    elif ptype == 'contourf':
+        if bvnorm:
+            bounds = np.linspace(vmin, vmax, blevs)
+            norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
+            im = ax.contourf(X,Y,Z,norm=norm,cmap=cmap,shading='flat')
+        else:
+            im = ax.contourf(X,Y,Z,vmax=vmax,vmin=vmin,cmap=cmap,shading='flat')
 
     if cbar:
         cbar = plt.colorbar(im, use_gridspec=True)

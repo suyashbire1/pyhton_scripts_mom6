@@ -1,6 +1,8 @@
 import sys
 import readParams_moreoptions as rdp1
+import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 from mom_plot1 import m6plot, xdegtokm
 import numpy as np
 from netCDF4 import MFDataset as mfdset, Dataset as dset
@@ -8,6 +10,9 @@ import time
 from plot_twamomx_budget_complete_direct_newest import extract_twamomx_terms
 from plot_twamomy_budget_complete_direct_newest import extract_twamomy_terms
 from plot_twauvpv import getuv
+import pyximport
+pyximport.install()
+import getvaratzc as gvz
 
 def getutwa(fhgeo, fh, fh2, sl):
     uh = fh2.variables['uh'][sl].filled(0).mean(axis=0,keepdims=True)
@@ -173,7 +178,6 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
                 em += fh2.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]/nt_const
                 #sys.stdout.write('\r'+str(int((i+1)/nt_const*100))+'% done...')
                 #sys.stdout.flush()
-
             elm = 0.5*(em[:,0:-1,:,:]+em[:,1:,:,:])
             em = np.ma.apply_over_axes(np.mean, em, meanax)
             elm = np.ma.apply_over_axes(np.mean, elm, meanax)
@@ -261,6 +265,10 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
     fig,ax = plt.subplots(np.int8(np.ceil(Pnew.shape[-1]/2)),2,
                           sharex=True,sharey=True,figsize=(12, 18))
 
+    cmaxpvhash = np.nanpercentile(pvhash,
+            [cmaxpercfactorpvhash,100-cmaxpercfactorpvhash])
+    cmaxpvhash = np.max(np.fabs(cmaxpvhash))
+
     cmax = np.nanpercentile(Pnew,
             [cmaxpercfactorPnew,100-cmaxpercfactorPnew])
     cmax = np.max(np.fabs(cmax))
@@ -282,11 +290,19 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r'$\frac{1}{\bar{h}}(\widehat{Y^V})_{\tilde{x}}$',
             r'$B_{\tilde{x} \tilde{y}} - B_{\tilde{y} \tilde{x}}$']
 
+    matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
     for i in range(Pnew.shape[-1]):
         axc = ax.ravel()[i]
         im = m6plot((X,Y,Pnew[:,:,i]),axc,vmax=cmax,vmin=-cmax,
-                ylim=(-2500,0), txt=lab[i],
+                ylim=(-2500,0), txt=lab[i], 
                 cmap='RdBu_r', cbar=False)
+        levels = np.linspace(-6,-5.5,10)
+        X1 = np.concatenate((X,X[:,-1:]),axis=1)
+        X1 = 0.5*(X1[:,:-1] + X1[:,1:])
+        Y1 = np.concatenate((-Y[:1,:],Y),axis=0)
+        Y1 = 0.5*(Y1[:-1,:] + Y1[1:,:])
+        cs = axc.contour(X1,Y1,np.log10(pvhash),levels, colors='k')
+        cs.clabel()
         
         if i % 2 == 0:
             axc.set_ylabel('z (m)')
