@@ -5,7 +5,9 @@ from mom_plot import m6plot
 import numpy as np
 from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
-from getvaratz import getvaratz
+import pyximport
+pyximport.install()
+from getvaratzc import getvaratzc
 
 def plot_eb_transport(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,savfil=None):
 
@@ -31,7 +33,7 @@ def plot_eb_transport(geofil,vgeofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,sa
     if 1 in keepax:
         z = np.linspace(-np.nanmax([2000]),-1,num=50)
         Y = z 
-    P = getvaratz(vh,z,e)
+    P = getvaratzc(vh,z,e)
     P = np.ma.apply_over_axes(np.mean, P, meanax)
     P = P.squeeze()
     #P = np.ma.apply_over_axes(np.mean, vh, meanax).squeeze()
