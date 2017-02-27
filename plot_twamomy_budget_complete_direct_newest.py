@@ -84,7 +84,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
 
         huvxphvvym = (fh.variables['twa_huvxpt'][0:,zs:ze,ys:ye,xs:xe]*dt +
                 fh.variables['twa_hvvymt'][0:,zs:ze,ys:ye,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
-        #v = fh.variables['v_masked'][0:,zs:ze,ys-1:ye+1,xs:xe].mean(axis=0,keepdims=True)
+        #v = (fh.variables['v_masked'][0:,zs:ze,ys-1:ye+1,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
         #hvv = v*vhforydiff
         #hvvym = np.diff(hvv,axis=2)/dxt/dyt
         #hvvym = 0.5*(hvvym[:,:,:-1,:] + hvvym[:,:,1:,:])

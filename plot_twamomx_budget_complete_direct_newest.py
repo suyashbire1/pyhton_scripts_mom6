@@ -91,7 +91,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
 
         huuxphuvym = (fh.variables['twa_huuxpt'][0:,zs:ze,ys:ye,xs:xe]*dt +
                 fh.variables['twa_huvymt'][0:,zs:ze,ys:ye,xs:xe]*dt).filled(np.nan).sum(axis=0,keepdims=True)/np.sum(dt)
-        #u = fh.variables['u_masked'][0:,zs:ze,ys:ye,xs-1:xe].filled(np.nan).mean(axis=0,keepdims=True)
+        #u = (fh.variables['u_masked'][0:,zs:ze,ys:ye,xs-1:xe]*dt).filled(np.nan).sum(axis=0,keepdims=True)/np.sum(dt)
         #huu = uhforxdiff*u
         #huuxm = np.diff(np.nan_to_num(huu),axis=3)/dxt/dyt
         #huuxm = np.concatenate((huuxm,-huuxm[:,:,:,-1:]),axis=3)

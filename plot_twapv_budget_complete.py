@@ -145,7 +145,7 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
                 wdb[:,:,1:,1:])
         pv3 = pvhash*wdb
         pv3 = pv3[:,:,:,:,np.newaxis]
-        hq[hq<10] = np.nan
+        #hq[hq<1] = np.nan
         pvnew = np.concatenate((pv1y[:,:,:,:,:1],
                                 pv1x[:,:,:,:,:1],
                                 pv3,
