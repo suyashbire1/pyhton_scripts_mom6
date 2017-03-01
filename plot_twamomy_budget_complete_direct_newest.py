@@ -5,6 +5,9 @@ from mom_plot1 import m6plot,xdegtokm
 import numpy as np
 from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
+import pyximport
+pyximport.install()
+from getvaratzc import getvaratzc5, getvaratzc
 
 def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
       fil3=None,alreadysaved=False,xyasindices=False,calledfrompv=False, htol=1e-3):
@@ -29,11 +32,11 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
             (xs,xe),(ys,ye) = (xstart,xend),(ystart,yend)
             _,_,dimv = rdp1.getdimsbyindx(fh,xs,xe,ys,ye,
                     zs=zs,ze=ze,ts=0,te=None,xhxq='xh',yhyq='yq',zlzi='zl')
-            sl = np.s_[:,:,ys:ye,xs:xe]
         else:
             (xs,xe),(ys,ye),dimv = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
                     slat=ystart, nlat=yend,zs=zs,ze=ze,yhyq='yq')
-            sl = np.s_[:,:,ys:ye,xs:xe]
+        sl = np.s_[:,:,ys:ye,xs:xe]
+        slmx = np.s_[:,:,ys:ye,xs-1:xe]
         D, (ah,aq) = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[0:2]
         Dforgetutwaforxdiff = rdp1.getgeombyindx(fhgeo,xs-1,xe,ys,ye)[0]
         Dforgetutwaforydiff = rdp1.getgeombyindx(fhgeo,xs,xe,ys-1,ye+1)[0]
@@ -51,11 +54,11 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         if fil3:
             fh3 = mfdset(fil3)
             islayerdeep0 = fh3.variables['islayerdeep'][:,0,0,0].sum()
-            islayerdeep = (fh3.variables['islayerdeep'][sl].filled(np.nan)).sum(axis=0,
+            islayerdeep = (fh3.variables['islayerdeep'][slmx].filled(np.nan)).sum(axis=0,
                                                                                keepdims=True)
+            islayerdeep[:,:,:,-1:] = islayerdeep[:,:,:,-2:-1]
             swash = (islayerdeep0 - islayerdeep)/islayerdeep0*100
-            swash = np.nanmean(swash,meanax)
-            swash = swash.squeeze()
+            swash = 0.5*(swash[:,:,:,:-1] + swash[:,:,:,1:])
             fh3.close()
         else:
             swash = None
@@ -181,19 +184,31 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
                                         -bdivep4[:,:,:,:,np.newaxis]),
                                         axis=4)
 
-        termsm = np.nanmean(terms,meanax)
-        termsepm = np.nanmean(termsep,meanax)
+        termsm = np.nanmean(terms,meanax,keepdims=True)
+        termsepm = np.nanmean(termsep,meanax,keepdims=True)
 
         X = dimv[keepax[1]]
         Y = dimv[keepax[0]]
-        if 1 in keepax:
-            em = np.mean(em,meanax)
-            elm = np.mean(elm,meanax)
-            Y = elm.squeeze()
-            X = np.meshgrid(X,dimv[1])[0]
+        if 1 in keepax and not calledfrompv:
+            em = np.nanmean(em,axis=meanax,keepdims=True)
+            elm = np.nanmean(elm,axis=meanax,keepdims=True)
+            z = np.linspace(-3000,0,100)
+            Y = z
+            P = getvaratzc5(termsm.astype(np.float32),
+                    z.astype(np.float32),
+                    em.astype(np.float32)).squeeze()
+            Pep = getvaratzc5(termsepm.astype(np.float32),
+                    z.astype(np.float32),
+                    em.astype(np.float32)).squeeze()
+            if fil3:
+                swash = np.nanmean(swash,meanax,keepdims=True)
+                swash = getvaratzc(swash.astype(np.float32),
+                        z.astype(np.float32),
+                        em.astype(np.float32)).squeeze()
+        else:
+            P = termsm.squeeze()
+            Pep = termsepm.squeeze()
 
-        P = termsm.squeeze()
-        Pep = termsepm.squeeze()
         if not calledfrompv: 
             np.savez('twamomy_complete_terms', X=X,Y=Y,P=P,Pep=Pep)
     else:
@@ -234,9 +249,9 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fi
 
     for i,p in enumerate(plotterms):
         axc = ax.ravel()[i]
-        im = m6plot((X,Y,P[:,:,p]),axc,vmax=cmax,vmin=-cmax,
+        im = m6plot((X,Y,P[:,:,p]),axc,vmax=cmax,vmin=-cmax,ptype='imshow',
                 txt=lab[p], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
-        if swash:
+        if fil3:
             cs = axc.contour(X,Y,swash,np.array([swashperc]), colors='k')
         
         if i % 2 == 0:
@@ -254,7 +269,8 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fi
     else:
         plt.show()
 
-    im = m6plot((X,Y,np.sum(P,axis=2)),vmax=cmax,vmin=-cmax,cmap='RdBu_r',ylim=(-2500,0))
+    im = m6plot((X,Y,np.sum(P,axis=2)),vmax=cmax,vmin=-cmax,ptype='imshow',
+            cmap='RdBu_r',ylim=(-2500,0))
     if savfil:
         plt.savefig(savfil+'res.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
@@ -278,8 +294,10 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fi
     fig,ax = plt.subplots(np.int8(np.ceil(Pep.shape[-1]/2)),2,sharex=True,sharey=True,figsize=(12, 9))
     for i in range(Pep.shape[-1]):
         axc = ax.ravel()[i]
-        im = m6plot((X,Y,Pep[:,:,i]),axc,vmax=cmax,vmin=-cmax,
+        im = m6plot((X,Y,Pep[:,:,i]),axc,vmax=cmax,vmin=-cmax,ptype='imshow',
                 txt=lab[i],cmap='RdBu_r', ylim=(-2500,0),cbar=False)
+        if fil3:
+            cs = axc.contour(X,Y,swash,np.array([swashperc]), colors='k')
         if i % 2 == 0:
             axc.set_ylabel('z (m)')
 

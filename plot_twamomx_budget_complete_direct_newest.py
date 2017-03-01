@@ -5,9 +5,12 @@ from mom_plot1 import m6plot, xdegtokm
 import numpy as np
 from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
+import pyximport
+pyximport.install()
+from getvaratzc import getvaratzc5, getvaratzc
 
 def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
-      alreadysaved=False,xyasindices=False,calledfrompv=False,htol=1e-3):
+        fil3=None,alreadysaved=False,xyasindices=False,calledfrompv=False,htol=1e-3):
 
     if not alreadysaved:
         keepax = ()
@@ -32,6 +35,8 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         else:
             (xs,xe),(ys,ye),dimu = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
                     slat=ystart, nlat=yend,zs=zs,ze=ze,xhxq='xq')
+        sl = np.s_[:,:,ys:ye,xs:xe]
+        slmy = np.s_[:,:,ys-1:ye,xs:xe]
         D, (ah,aq) = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[0:2]
         Dforgetutwaforxdiff = rdp1.getgeombyindx(fhgeo,xs-1,xe,ys,ye)[0]
         Dforgetutwaforydiff = rdp1.getgeombyindx(fhgeo,xs,xe,ys-1,ye+1)[0]
@@ -48,6 +53,17 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         t0 = time.time()
         dt = fh.variables['average_DT'][:]
         dt = dt[:,np.newaxis,np.newaxis,np.newaxis]
+
+        if fil3:
+            fh3 = mfdset(fil3)
+            islayerdeep0 = fh3.variables['islayerdeep'][:,0,0,0].sum()
+            islayerdeep = (fh3.variables['islayerdeep'][slmy].filled(np.nan)).sum(axis=0,
+                                                                               keepdims=True)
+            swash = (islayerdeep0 - islayerdeep)/islayerdeep0*100
+            swash = 0.5*(swash[:,:,:-1,:] + swash[:,:,1:,:])
+            fh3.close()
+        else:
+            swash = None
 
         em = (fh2.variables['e'][0:,zs:ze,ys:ye,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
         elm = 0.5*(em[:,0:-1,:,:]+em[:,1:,:,:])
@@ -174,19 +190,30 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
                                     -bdivep4[:,:,:,:,np.newaxis]),
                                     axis=4)
 
-        termsm = np.nanmean(terms,axis=meanax)
-        termsepm = np.nanmean(termsep,axis=meanax)
+        termsm = np.nanmean(terms,axis=meanax,keepdims=True)
+        termsepm = np.nanmean(termsep,axis=meanax,keepdims=True)
 
         X = dimu[keepax[1]]
         Y = dimu[keepax[0]]
-        if 1 in keepax:
-            em = np.nanmean(em,axis=meanax)
-            elm = np.nanmean(elm,axis=meanax)
-            Y = elm.squeeze()
-            X = np.meshgrid(X,dimu[1])[0]
-
-        P = termsm.squeeze()
-        Pep = termsepm.squeeze()
+        if 1 in keepax and not calledfrompv:
+            em = np.nanmean(em,axis=meanax,keepdims=True)
+            elm = np.nanmean(elm,axis=meanax,keepdims=True)
+            z = np.linspace(-3000,0,100)
+            Y = z
+            P = getvaratzc5(termsm.astype(np.float32),
+                    z.astype(np.float32),
+                    em.astype(np.float32)).squeeze()
+            Pep = getvaratzc5(termsepm.astype(np.float32),
+                    z.astype(np.float32),
+                    em.astype(np.float32)).squeeze()
+            if fil3:
+                swash = np.nanmean(swash,meanax,keepdims=True)
+                swash = getvaratzc(swash.astype(np.float32),
+                        z.astype(np.float32),
+                        em.astype(np.float32)).squeeze()
+        else:
+            P = termsm.squeeze()
+            Pep = termsepm.squeeze()
         if not calledfrompv: 
             np.savez('twamomx_complete_terms', X=X,Y=Y,P=P,Pep=Pep)
     else:
@@ -196,19 +223,19 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         P = npzfile['P']
         Pep = npzfile['Pep']
         
-    return (X,Y,P,Pep)
+    return (X,Y,P,Pep,swash)
 
 def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
-        cmaxpercfactor = 1,cmaxpercfactorforep=1, plotterms=[3,4,7],
-        savfil=None,savfilep=None,alreadysaved=False):
-    X,Y,P,Pep = extract_twamomx_terms(geofil,vgeofil,fil,fil2,
+        fil3=None,cmaxpercfactor = 1,cmaxpercfactorforep=1, plotterms=[3,4,7],
+        swashperc=1,savfil=None,savfilep=None,alreadysaved=False):
+    X,Y,P,Pep,swash = extract_twamomx_terms(geofil,vgeofil,fil,fil2,
                                         xstart,xend,ystart,yend,zs,ze,
-                                        meanax, alreadysaved)
+                                        meanax, alreadysaved=alreadysaved,fil3=fil3)
     P = np.ma.masked_array(P,mask=np.isnan(P))
     cmax = np.nanpercentile(P,[cmaxpercfactor,100-cmaxpercfactor])
     cmax = np.max(np.fabs(cmax))
     fig,ax = plt.subplots(np.int8(np.ceil(len(plotterms)/2)),2,
-                          sharex=True,sharey=True,figsize=(12, 9))
+                          sharex=True,sharey=True,figsize=(12, 4.5))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
     lab = [ r'$-\hat{u}\hat{u}_{\tilde{x}}$',
             r'$-\hat{v}\hat{u}_{\tilde{y}}$',
@@ -223,8 +250,10 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
 
     for i,p in enumerate(plotterms):
         axc = ax.ravel()[i]
-        im = m6plot((X,Y,P[:,:,p]),axc,vmax=cmax,vmin=-cmax,
+        im = m6plot((X,Y,P[:,:,p]),axc,vmax=cmax,vmin=-cmax,ptype='imshow',
                 txt=lab[p], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
+        if fil3:
+            cs = axc.contour(X,Y,swash,np.array([swashperc]), colors='k')
         
         if i % 2 == 0:
             axc.set_ylabel('z (m)')
@@ -241,7 +270,8 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
     else:
         plt.show()
 
-    im = m6plot((X,Y,np.sum(P,axis=2)),vmax=cmax,vmin=-cmax,cmap='RdBu_r',ylim=(-2500,0))
+    im = m6plot((X,Y,np.sum(P,axis=2)),vmax=cmax,vmin=-cmax,
+            ptype='imshow',cmap='RdBu_r',ylim=(-2500,0))
     if savfil:
         plt.savefig(savfil+'res.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
@@ -264,8 +294,10 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
     fig,ax = plt.subplots(np.int8(np.ceil(Pep.shape[-1]/2)),2,sharex=True,sharey=True,figsize=(12, 9))
     for i in range(Pep.shape[-1]):
         axc = ax.ravel()[i]
-        im = m6plot((X,Y,Pep[:,:,i]),axc,vmax=cmax,vmin=-cmax,
+        im = m6plot((X,Y,Pep[:,:,i]),axc,vmax=cmax,vmin=-cmax,ptype='imshow',
                 txt=lab[i],cmap='RdBu_r', ylim=(-2500,0),cbar=False)
+        if fil3:
+            cs = axc.contour(X,Y,swash,np.array([swashperc]), colors='k')
         if i % 2 == 0:
             axc.set_ylabel('z (m)')
 

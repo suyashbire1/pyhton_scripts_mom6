@@ -44,6 +44,15 @@ def m6plot(data,ax=None,**plotkwargs):
             im = ax.contourf(X,Y,Z,norm=norm,cmap=cmap,shading='flat')
         else:
             im = ax.contourf(X,Y,Z,vmax=vmax,vmin=vmin,cmap=cmap,shading='flat')
+    elif ptype == 'imshow':
+        dx = np.diff(X)[0]
+        dy = np.diff(Y)[0]
+        extent = [X.min()-dx/2,X.max()+dx/2,Y.min()-dy/2,Y.max()+dy/2]
+        im = ax.imshow(Z,origin='lower',extent=extent,
+                       interpolation='none',
+                       vmax=vmax,vmin=vmin,cmap=cmap)
+        ax.set_xlim(X.min(),X.max())
+        ax.set_ylim(Y.min(),Y.max())
 
     if cbar:
         cbar = plt.colorbar(im, use_gridspec=True)

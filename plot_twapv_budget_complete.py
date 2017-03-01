@@ -12,10 +12,12 @@ from plot_twamomy_budget_complete_direct_newest import extract_twamomy_terms
 from plot_twauvpv import getuv
 import pyximport
 pyximport.install()
-import getvaratzc as gvz
+from getvaratzc import getvaratzc5, getvaratzc
 
 def getutwa(fhgeo, fh, fh2, sl):
-    uh = fh2.variables['uh'][sl].filled(0).mean(axis=0,keepdims=True)
+    dt = fh.variables['average_DT'][:]
+    dt = dt[:,np.newaxis,np.newaxis,np.newaxis]
+    uh = (fh.variables['uh_masked'][sl].filled(0)*dt).sum(axis=0,keepdims=True)/np.sum(dt)
     h_cu = fh.variables['h_Cu'][sl].filled(0).mean(axis=0,keepdims=True)
     h_cu = np.ma.masked_array(h_cu,mask=(h_cu<1e-3))
     dycu = fhgeo.variables['dyCu'][sl[2:]]
@@ -23,7 +25,9 @@ def getutwa(fhgeo, fh, fh2, sl):
     return utwa, h_cu
 
 def getvtwa(fhgeo, fh, fh2, sl):
-    vh = fh2.variables['vh'][sl].mean(axis=0,keepdims=True)
+    dt = fh.variables['average_DT'][:]
+    dt = dt[:,np.newaxis,np.newaxis,np.newaxis]
+    vh = (fh.variables['vh_masked'][sl]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
     h_cv = fh.variables['h_Cv'][sl].mean(axis=0,keepdims=True)
     h_cv = np.ma.masked_array(h_cv,mask=(h_cv<1e-3))
     dxcv = fhgeo.variables['dxCv'][sl[2:]]
@@ -50,7 +54,7 @@ def getpv(fhgeo, fh, fh2, xs, xe, ys, ye, zs=0, ze=None):
     pvhash = (f - utway + vtwax)/h_q
     return pvhash, h_q
 
-def extract_twapv_terms(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,zs,ze,meanax,
+def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fil3=None,
       alreadysaved=False):
 
     if not alreadysaved:
@@ -62,7 +66,6 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,zs,
         fhgeo = dset(geofil)
         fh = mfdset(fil)
         fh2 = mfdset(fil2)
-        fh3 = mfdset(fil3)
         zi = rdp1.getdims(fh)[2][0]
         dbl = -np.diff(zi)*9.8/1031
         (xs,xe),(ys,ye),dimq = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
@@ -79,10 +82,16 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,zs,
         dxcu = fhgeo.variables['dxCu'][slpy[2:]]
         dycv = fhgeo.variables['dyCv'][sl[2:]]
         dycv = np.concatenate((dycv,dycv[:,-1:]),axis=1)
-        islayerdeep0 = fh3.variables['islayerdeep'][:,0,0,0].sum()
-        islayerdeep = (fh3.variables['islayerdeep'][sl].filled(np.nan)).sum(axis=0,
-                                                                           keepdims=True)
-        swash = (islayerdeep0 - islayerdeep)/islayerdeep0*100
+
+        if fil3:
+            fh3 = mfdset(fil3)
+            islayerdeep0 = fh3.variables['islayerdeep'][:,0,0,0].sum()
+            islayerdeep = (fh3.variables['islayerdeep'][sl].filled(np.nan)).sum(axis=0,
+                                                                               keepdims=True)
+            swash = (islayerdeep0 - islayerdeep)/islayerdeep0*100
+            fh3.close()
+        else:
+            swash = None
 
         xmom = extract_twamomx_terms(geofil,vgeofil,fil,fil2,xs,xe,ys,ye+1,zs,ze,(0,),
                 alreadysaved=False,xyasindices=True,calledfrompv=True)[2]
@@ -163,43 +172,42 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,zs,
                                 pv1y[:,:,:,:,1:-1],
                                 pv1x[:,:,:,:,-1:]+pv1y[:,:,:,:,-1:]),axis=4)/hq[:,:,:,:,np.newaxis]
 
-        pvmask = np.zeros(pv.shape,dtype=np.int8)
-        pvmask[:,:,:,-1:] = 1
-        pv = np.ma.masked_array(pv, mask=(pvmask==1))
+        pv = np.ma.filled(pv.astype(np.float64), np.nan)
+        pvnew = np.ma.filled(pvnew.astype(np.float64), np.nan)
+        pvhash = np.ma.filled(pvhash.astype(np.float64), np.nan)
 
-        pvnewmask = np.zeros(pvnew.shape,dtype=np.int8)
-        pvnewmask[:,:,:,-1:] = 1
-        pvnew = np.ma.masked_array(pvnew, mask=(pvnewmask==1))
-
-        pv = np.ma.apply_over_axes(np.nanmean, pv, meanax)
-        pvnew = np.ma.apply_over_axes(np.nanmean, pvnew, meanax)
-        pvhash = np.ma.apply_over_axes(np.nanmean, pvhash, meanax)
-        swash = np.ma.apply_over_axes(np.nanmean, swash, meanax)
+        pv = np.nanmean(pv,meanax,keepdims=True)
+        pvnew = np.nanmean(pvnew,meanax,keepdims=True)
+        pvhash = np.nanmean(pvhash,meanax,keepdims=True)
 
         X = dimq[keepax[1]]
         Y = dimq[keepax[0]]
         if 1 in keepax:
-            em = fh2.variables['e'][0:1,zs:ze,ys:ye,xs:xe]/nt_const
-            for i in range(1,nt_const):
-                em += fh2.variables['e'][i:i+1,zs:ze,ys:ye,xs:xe]/nt_const
-                #sys.stdout.write('\r'+str(int((i+1)/nt_const*100))+'% done...')
-                #sys.stdout.flush()
-            elm = 0.5*(em[:,0:-1,:,:]+em[:,1:,:,:])
-            em = np.ma.apply_over_axes(np.mean, em, meanax)
-            elm = np.ma.apply_over_axes(np.mean, elm, meanax)
-            Y = elm.squeeze()
-            X = np.meshgrid(X,dimq[1])[0]
-
-        P = pv.squeeze()
-        P = np.ma.filled(P.astype(float), np.nan)
-        Pnew = pvnew.squeeze()
-        Pnew = np.ma.filled(Pnew.astype(float), np.nan)
-        pvhash = pvhash.squeeze()
-        pvhash = np.ma.filled(pvhash.astype(float), np.nan)
-        swash = swash.squeeze()
-        swash = np.ma.filled(swash.astype(float), np.nan)
-        X = np.ma.filled(X.astype(float), np.nan)
-        Y = np.ma.filled(Y.astype(float), np.nan)
+            dt = fh.variables['average_DT'][:]
+            dt = dt[:,np.newaxis,np.newaxis,np.newaxis]
+            em = (fh2.variables['e'][0:,zs:ze,ys:ye,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
+            em = np.nanmean(em, meanax,keepdims=True)
+            z = np.linspace(-3000,0,100)
+            Y = z
+            P = getvaratzc5(pv.astype(np.float32),
+                    z.astype(np.float32),
+                    em.astype(np.float32)).squeeze()
+            Pnew = getvaratzc5(pvnew.astype(np.float32),
+                    z.astype(np.float32),
+                    em.astype(np.float32)).squeeze()
+            pvhash = getvaratzc(pvhash.astype(np.float32),
+                    z.astype(np.float32),
+                    em.astype(np.float32)).squeeze()
+            if fil3:
+                swash = np.nanmean(swash, meanax,keepdims=True)
+                swash = getvaratzc(swash.astype(np.float32),
+                        z.astype(np.float32),
+                        em.astype(np.float32)).squeeze()
+        else:
+            P = pv.squeeze()
+            Pnew = pvnew.squeeze()
+            pvhash = pvhash.squeeze()
+            swash = swash.squeeze()
         np.savez('twapv_complete_terms', X=X,Y=Y,P=P)
     else:
         npzfile = np.load('twapv_complete_terms.npz')
@@ -210,14 +218,13 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,zs,
     fhgeo.close()
     fh.close()
     fh2.close()
-    fh3.close()
     return (X,Y,P,pvhash,Pnew,swash)
 
-def plot_twapv(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,zs,ze,meanax,
-        plotterms = [0,1,10,11,12,13], swashperc = 1,
+def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
+        fil3=None,plotterms = [0,1,10,11,12,13], swashperc = 1,
         cmaxpercfactor = 1,cmaxpercfactorpvhash=15,cmaxpercfactorPnew=15, savfil=None,savfilep=None,alreadysaved=False):
-    X,Y,P,pvhash,Pnew,swash = extract_twapv_terms(geofil,vgeofil,fil,fil2,fil3,
-            xstart,xend,ystart,yend,zs,ze,meanax,alreadysaved)
+    X,Y,P,pvhash,Pnew,swash = extract_twapv_terms(geofil,vgeofil,fil,fil2,
+            xstart,xend,ystart,yend,zs,ze,meanax,alreadysaved=alreadysaved,fil3=fil3)
     cmax = np.nanpercentile(P,[cmaxpercfactor,100-cmaxpercfactor])
     cmax = np.max(np.fabs(cmax))
     fig,ax = plt.subplots(np.int8(np.ceil(P.shape[-1]/2)),2,
@@ -246,9 +253,11 @@ def plot_twapv(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,zs,ze,meanax
             r'$(\widehat{Y^V})_{\tilde{x}}$']
     for i in range(P.shape[-1]):
         axc = ax.ravel()[i]
-        im = m6plot((X,Y,P[:,:,i]),axc,vmax=cmax,vmin=-cmax,
+        im = m6plot((X,Y,P[:,:,i]),axc,vmax=cmax,vmin=-cmax,ptype='imshow',
                 txt=labx[i]+' + '+laby[i], ylim=(-2500,0),
                 cmap='RdBu_r', cbar=False)
+        if fil3:
+            cs = axc.contour(X,Y,swash,np.array([swashperc]), colors='k')
         
         if i % 2 == 0:
             axc.set_ylabel('z (m)')
@@ -265,7 +274,7 @@ def plot_twapv(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,zs,ze,meanax
     else:
         plt.show()
 
-    im = m6plot((X,Y,np.sum(P,axis=2)),vmax=cmax,vmin=-cmax,cmap='RdBu_r',ylim=(-2500,0))
+    im = m6plot((X,Y,np.sum(P,axis=2)),vmax=cmax,vmin=-cmax,ptype='imshow',cmap='RdBu_r',ylim=(-2500,0))
     if savfil:
         plt.savefig(savfil+'res.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
@@ -305,17 +314,11 @@ def plot_twapv(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,zs,ze,meanax
     matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
     for i,p in enumerate(plotterms):
         axc = ax.ravel()[i]
-        im = m6plot((X,Y,Pnew[:,:,p]),axc,vmax=cmax,vmin=-cmax,
+        im = m6plot((X,Y,Pnew[:,:,p]),axc,vmax=cmax,vmin=-cmax,ptype='imshow',
                 ylim=(-2500,0), txt=lab[p], 
                 cmap='RdBu_r', cbar=False)
-#        levels = np.linspace(-6,-5.5,10)
-#        X1 = np.concatenate((X,X[:,-1:]),axis=1)
-#        X1 = 0.5*(X1[:,:-1] + X1[:,1:])
-#        Y1 = np.concatenate((-Y[:1,:],Y),axis=0)
-#        Y1 = 0.5*(Y1[:-1,:] + Y1[1:,:])
-        cs = axc.contour(X,Y,swash,np.array([swashperc]), colors='k')
-        #cs.clabel()
-        
+        if fil3:
+            cs = axc.contour(X,Y,swash,np.array([swashperc]), colors='k')
         if i % 2 == 0:
             axc.set_ylabel('z (m)')
         if i > np.size(ax)-3:
@@ -330,7 +333,7 @@ def plot_twapv(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,zs,ze,meanax
                     format='eps', transparent=False, bbox_inches='tight')
     else:
         plt.show()
-    im = m6plot((X,Y,np.sum(Pnew,axis=2)),vmax=cmax,vmin=-cmax,cmap='RdBu_r',ylim=(-2500,0))
+    im = m6plot((X,Y,np.sum(Pnew,axis=2)),ptype='imshow',vmax=cmax,vmin=-cmax,cmap='RdBu_r',ylim=(-2500,0))
     if savfil:
         plt.savefig(savfil+'Pnewres.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
@@ -340,7 +343,9 @@ def plot_twapv(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,zs,ze,meanax
     cmax = np.nanpercentile(pvhash,
             [cmaxpercfactorpvhash,100-cmaxpercfactorpvhash])
     cmax = np.max(np.fabs(cmax))
-    im = m6plot((X,Y,pvhash),vmax=cmax,vmin=-cmax,cmap='RdBu_r',ylim=(-2500,0))
+    im = m6plot((X,Y,pvhash),ptype='imshow',vmax=cmax,vmin=-cmax,cmap='RdBu_r',ylim=(-2500,0))
+    if fil3:
+        cs = axc.contour(X,Y,swash,np.array([swashperc]), colors='k')
     if savfil:
         plt.savefig(savfil+'pvhash.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
