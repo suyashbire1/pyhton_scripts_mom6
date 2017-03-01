@@ -199,7 +199,7 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
     return (X,Y,P,Pep)
 
 def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
-        cmaxpercfactor = 1,cmaxpercfactorforep=1, 
+        cmaxpercfactor = 1,cmaxpercfactorforep=1, plotterms=[3,4,7],
         savfil=None,savfilep=None,alreadysaved=False):
     X,Y,P,Pep = extract_twamomx_terms(geofil,vgeofil,fil,fil2,
                                         xstart,xend,ystart,yend,zs,ze,
@@ -207,7 +207,7 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
     P = np.ma.masked_array(P,mask=np.isnan(P))
     cmax = np.nanpercentile(P,[cmaxpercfactor,100-cmaxpercfactor])
     cmax = np.max(np.fabs(cmax))
-    fig,ax = plt.subplots(np.int8(np.ceil(P.shape[-1]/2)),2,
+    fig,ax = plt.subplots(np.int8(np.ceil(len(plotterms)/2)),2,
                           sharex=True,sharey=True,figsize=(12, 9))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
     lab = [ r'$-\hat{u}\hat{u}_{\tilde{x}}$',
@@ -221,10 +221,10 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r'$\widehat{X^H}$',
             r'$\widehat{X^V}$']
 
-    for i in range(P.shape[-1]):
+    for i,p in enumerate(plotterms):
         axc = ax.ravel()[i]
-        im = m6plot((X,Y,P[:,:,i]),axc,vmax=cmax,vmin=-cmax,
-                txt=lab[i], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
+        im = m6plot((X,Y,P[:,:,p]),axc,vmax=cmax,vmin=-cmax,
+                txt=lab[p], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
         
         if i % 2 == 0:
             axc.set_ylabel('z (m)')

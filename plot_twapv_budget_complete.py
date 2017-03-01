@@ -50,7 +50,7 @@ def getpv(fhgeo, fh, fh2, xs, xe, ys, ye, zs=0, ze=None):
     pvhash = (f - utway + vtwax)/h_q
     return pvhash, h_q
 
-def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
+def extract_twapv_terms(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,zs,ze,meanax,
       alreadysaved=False):
 
     if not alreadysaved:
@@ -62,6 +62,7 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         fhgeo = dset(geofil)
         fh = mfdset(fil)
         fh2 = mfdset(fil2)
+        fh3 = mfdset(fil3)
         zi = rdp1.getdims(fh)[2][0]
         dbl = -np.diff(zi)*9.8/1031
         (xs,xe),(ys,ye),dimq = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
@@ -78,6 +79,10 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         dxcu = fhgeo.variables['dxCu'][slpy[2:]]
         dycv = fhgeo.variables['dyCv'][sl[2:]]
         dycv = np.concatenate((dycv,dycv[:,-1:]),axis=1)
+        islayerdeep0 = fh3.variables['islayerdeep'][:,0,0,0].sum()
+        islayerdeep = (fh3.variables['islayerdeep'][sl].filled(np.nan)).sum(axis=0,
+                                                                           keepdims=True)
+        swash = (islayerdeep0 - islayerdeep)/islayerdeep0*100
 
         xmom = extract_twamomx_terms(geofil,vgeofil,fil,fil2,xs,xe,ys,ye+1,zs,ze,(0,),
                 alreadysaved=False,xyasindices=True,calledfrompv=True)[2]
@@ -169,6 +174,7 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         pv = np.ma.apply_over_axes(np.nanmean, pv, meanax)
         pvnew = np.ma.apply_over_axes(np.nanmean, pvnew, meanax)
         pvhash = np.ma.apply_over_axes(np.nanmean, pvhash, meanax)
+        swash = np.ma.apply_over_axes(np.nanmean, swash, meanax)
 
         X = dimq[keepax[1]]
         Y = dimq[keepax[0]]
@@ -190,6 +196,8 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
         Pnew = np.ma.filled(Pnew.astype(float), np.nan)
         pvhash = pvhash.squeeze()
         pvhash = np.ma.filled(pvhash.astype(float), np.nan)
+        swash = swash.squeeze()
+        swash = np.ma.filled(swash.astype(float), np.nan)
         X = np.ma.filled(X.astype(float), np.nan)
         Y = np.ma.filled(Y.astype(float), np.nan)
         np.savez('twapv_complete_terms', X=X,Y=Y,P=P)
@@ -202,12 +210,14 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
     fhgeo.close()
     fh.close()
     fh2.close()
-    return (X,Y,P,pvhash,Pnew)
+    fh3.close()
+    return (X,Y,P,pvhash,Pnew,swash)
 
-def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
+def plot_twapv(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,zs,ze,meanax,
+        plotterms = [0,1,10,11,12,13], swashperc = 1,
         cmaxpercfactor = 1,cmaxpercfactorpvhash=15,cmaxpercfactorPnew=15, savfil=None,savfilep=None,alreadysaved=False):
-    X,Y,P,pvhash,Pnew = extract_twapv_terms(geofil,vgeofil,fil,fil2,
-            xstart,xend,ystart,yend,zs,ze,meanax, alreadysaved)
+    X,Y,P,pvhash,Pnew,swash = extract_twapv_terms(geofil,vgeofil,fil,fil2,fil3,
+            xstart,xend,ystart,yend,zs,ze,meanax,alreadysaved)
     cmax = np.nanpercentile(P,[cmaxpercfactor,100-cmaxpercfactor])
     cmax = np.max(np.fabs(cmax))
     fig,ax = plt.subplots(np.int8(np.ceil(P.shape[-1]/2)),2,
@@ -262,8 +272,8 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
     else:
         plt.show()
 
-    fig,ax = plt.subplots(np.int8(np.ceil(Pnew.shape[-1]/2)),2,
-                          sharex=True,sharey=True,figsize=(12, 18))
+    fig,ax = plt.subplots(np.int8(np.ceil(len(plotterms)/2)),2,
+                          sharex=True,sharey=True,figsize=(12,7))
 
     cmaxpvhash = np.nanpercentile(pvhash,
             [cmaxpercfactorpvhash,100-cmaxpercfactorpvhash])
@@ -284,25 +294,27 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r'$-\frac{1}{\bar{h}}(\widehat{X^V})_{\tilde{y}}$',
             r'$-\frac{(\hat{\varpi}\hat{v}_{\tilde{b}})_{\tilde{x}}}{\bar{h}}$', 
             r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{u^{\prime \prime}v^{\prime \prime}})_{\tilde{x}})_{\tilde{x}}$""", 
-            r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{v^{\prime \prime}v^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{y}})_{\tilde{x}}$""",
-            r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{v^{\prime \prime}\varpi^{\prime \prime}} + \overline{\zeta^{\prime}m_{\tilde{y}}^{\prime}})_{\tilde{b}})_{\tilde{x}}$""",
+            #r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{v^{\prime \prime}v^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{y}})_{\tilde{x}}$""",
+            r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{v^{\prime \prime}v^{\prime \prime}})_{\tilde{y}})_{\tilde{x}}$""",
+            #r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{v^{\prime \prime}\varpi^{\prime \prime}} + \overline{\zeta^{\prime}m_{\tilde{y}}^{\prime}})_{\tilde{b}})_{\tilde{x}}$""",
+            r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\overline{\zeta^{\prime}m_{\tilde{y}}^{\prime}})_{\tilde{b}})_{\tilde{x}}$""",
             r'$\frac{1}{\bar{h}}(\widehat{Y^H})_{\tilde{x}}$', 
             r'$\frac{1}{\bar{h}}(\widehat{Y^V})_{\tilde{x}}$',
             r'$B_{\tilde{x} \tilde{y}} - B_{\tilde{y} \tilde{x}}$']
 
     matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
-    for i in range(Pnew.shape[-1]):
+    for i,p in enumerate(plotterms):
         axc = ax.ravel()[i]
-        im = m6plot((X,Y,Pnew[:,:,i]),axc,vmax=cmax,vmin=-cmax,
-                ylim=(-2500,0), txt=lab[i], 
+        im = m6plot((X,Y,Pnew[:,:,p]),axc,vmax=cmax,vmin=-cmax,
+                ylim=(-2500,0), txt=lab[p], 
                 cmap='RdBu_r', cbar=False)
-        levels = np.linspace(-6,-5.5,10)
-        X1 = np.concatenate((X,X[:,-1:]),axis=1)
-        X1 = 0.5*(X1[:,:-1] + X1[:,1:])
-        Y1 = np.concatenate((-Y[:1,:],Y),axis=0)
-        Y1 = 0.5*(Y1[:-1,:] + Y1[1:,:])
-        cs = axc.contour(X1,Y1,np.log10(pvhash),levels, colors='k')
-        cs.clabel()
+#        levels = np.linspace(-6,-5.5,10)
+#        X1 = np.concatenate((X,X[:,-1:]),axis=1)
+#        X1 = 0.5*(X1[:,:-1] + X1[:,1:])
+#        Y1 = np.concatenate((-Y[:1,:],Y),axis=0)
+#        Y1 = 0.5*(Y1[:-1,:] + Y1[1:,:])
+        cs = axc.contour(X,Y,swash,np.array([swashperc]), colors='k')
+        #cs.clabel()
         
         if i % 2 == 0:
             axc.set_ylabel('z (m)')
@@ -320,7 +332,7 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
         plt.show()
     im = m6plot((X,Y,np.sum(Pnew,axis=2)),vmax=cmax,vmin=-cmax,cmap='RdBu_r',ylim=(-2500,0))
     if savfil:
-        plt.savefig(savfil+'Pnew.eps', dpi=300, facecolor='w', edgecolor='w', 
+        plt.savefig(savfil+'Pnewres.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
     else:
         plt.show()

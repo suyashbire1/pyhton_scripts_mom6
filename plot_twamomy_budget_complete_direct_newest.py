@@ -7,7 +7,7 @@ from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
 
 def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
-      alreadysaved=False,xyasindices=False,calledfrompv=False, htol=1e-3):
+      fil3=None,alreadysaved=False,xyasindices=False,calledfrompv=False, htol=1e-3):
 
     if not alreadysaved:
         keepax = ()
@@ -29,9 +29,11 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
             (xs,xe),(ys,ye) = (xstart,xend),(ystart,yend)
             _,_,dimv = rdp1.getdimsbyindx(fh,xs,xe,ys,ye,
                     zs=zs,ze=ze,ts=0,te=None,xhxq='xh',yhyq='yq',zlzi='zl')
+            sl = np.s_[:,:,ys:ye,xs:xe]
         else:
             (xs,xe),(ys,ye),dimv = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
                     slat=ystart, nlat=yend,zs=zs,ze=ze,yhyq='yq')
+            sl = np.s_[:,:,ys:ye,xs:xe]
         D, (ah,aq) = rdp1.getgeombyindx(fhgeo,xs,xe,ys,ye)[0:2]
         Dforgetutwaforxdiff = rdp1.getgeombyindx(fhgeo,xs-1,xe,ys,ye)[0]
         Dforgetutwaforydiff = rdp1.getgeombyindx(fhgeo,xs,xe,ys-1,ye+1)[0]
@@ -45,6 +47,18 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         t0 = time.time()
         dt = fh.variables['average_DT'][:]
         dt = dt[:,np.newaxis,np.newaxis,np.newaxis]
+
+        if fil3:
+            fh3 = mfdset(fil3)
+            islayerdeep0 = fh3.variables['islayerdeep'][:,0,0,0].sum()
+            islayerdeep = (fh3.variables['islayerdeep'][sl].filled(np.nan)).sum(axis=0,
+                                                                               keepdims=True)
+            swash = (islayerdeep0 - islayerdeep)/islayerdeep0*100
+            swash = np.nanmean(swash,meanax)
+            swash = swash.squeeze()
+            fh3.close()
+        else:
+            swash = None
 
         em = (fh2.variables['e'][0:,zs:ze,ys:ye,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
         elm = 0.5*(em[:,0:-1,:,:]+em[:,1:,:,:])
@@ -189,19 +203,20 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         P = npzfile['P']
         Pep = npzfile['Pep']
         
-    return (X,Y,P,Pep)
+    return (X,Y,P,Pep,swash)
 
-def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
-        cmaxpercfactor = 1,cmaxpercfactorforep=1, 
+def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fil3=None,
+        cmaxpercfactor = 1,cmaxpercfactorforep=1,
+        plotterms=[3,4,5,6,7,8],swashperc=1,
         savfil=None,savfilep=None,alreadysaved=False):
-    X,Y,P,Pep = extract_twamomy_terms(geofil,vgeofil,fil,fil2,
+    X,Y,P,Pep,swash = extract_twamomy_terms(geofil,vgeofil,fil,fil2,
                                         xstart,xend,ystart,yend,zs,ze,
-                                        meanax, alreadysaved)
+                                        meanax, alreadysaved=alreadysaved, fil3=fil3)
     P = np.ma.masked_array(P,mask=np.isnan(P))
     cmax = np.nanpercentile(P,[cmaxpercfactor,100-cmaxpercfactor])
     cmax = np.max(np.fabs(cmax))
-    fig,ax = plt.subplots(np.int8(np.ceil(P.shape[-1]/2)),2,
-                          sharex=True,sharey=True,figsize=(12, 9))
+    fig,ax = plt.subplots(np.int8(np.ceil(len(plotterms)/2)),2,
+                          sharex=True,sharey=True,figsize=(12, 7))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
     lab = [ r'$-\hat{u}\hat{v}_{\tilde{x}}$', 
             r'$-\hat{v}\hat{v}_{\tilde{y}}$', 
@@ -209,16 +224,20 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             r'$-f\hat{u}$', 
             r'$-\overline{m_{\tilde{y}}}$', 
             r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{u^{\prime \prime}v^{\prime \prime}})_{\tilde{x}}$""", 
-            r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}v^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{y}}$""",
-            r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}\varpi ^{\prime \prime}} + \overline{\zeta^\prime m_{\tilde{y}}^\prime})_{\tilde{b}}$""",
+            #r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}v^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{y}}$""",
+            r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}v^{\prime \prime}})_{\tilde{y}}$""",
+            #r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}\varpi ^{\prime \prime}} + \overline{\zeta^\prime m_{\tilde{y}}^\prime})_{\tilde{b}}$""",
+            r"""$-\frac{1}{\overline{h}}(\overline{\zeta^\prime m_{\tilde{y}}^\prime})_{\tilde{b}}$""",
             r'$\widehat{Y^H}$', 
             r'$\widehat{Y^V}$']
 
 
-    for i in range(P.shape[-1]):
+    for i,p in enumerate(plotterms):
         axc = ax.ravel()[i]
-        im = m6plot((X,Y,P[:,:,i]),axc,vmax=cmax,vmin=-cmax,
-                txt=lab[i], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
+        im = m6plot((X,Y,P[:,:,p]),axc,vmax=cmax,vmin=-cmax,
+                txt=lab[p], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
+        if swash:
+            cs = axc.contour(X,Y,swash,np.array([swashperc]), colors='k')
         
         if i % 2 == 0:
             axc.set_ylabel('z (m)')
