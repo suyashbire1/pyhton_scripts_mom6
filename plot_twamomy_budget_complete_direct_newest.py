@@ -107,7 +107,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         #hvvym = 0.5*(hvvym[:,:,:-1,:] + hvvym[:,:,1:,:])
         hvv = (fh.variables['hvv_T'][0:,zs:ze,ys:ye+1,xs:xe]*dt).sum(axis=0,keepdims=True)*dxt/np.sum(dt)
         hvvym = np.diff(hvv,axis=2)/dycv/dxcv
-        huvxm = huvxphvvym - hvvym
+        huvxm = huvxphvvym + hvvym
 
         vtwaforvdiff = np.concatenate((vtwa[:,[0],:,:],vtwa),axis=1)
         vtwab = np.diff(vtwaforvdiff,axis=1)/db[:,np.newaxis,np.newaxis]
@@ -144,21 +144,21 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         cor = hmfum/h_vm
         pfvm = pfvm
 
-        xdivep1 = -huvxm/h_vm
-        xdivep2 = -advx
-        xdivep3 = -vtwa*humx/h_vm 
+        xdivep1 = huvxm/h_vm
+        xdivep2 = advx
+        xdivep3 = vtwa*humx/h_vm 
         xdivep = (xdivep1 + xdivep2 + xdivep3)
 
         ydivep1 = -hvvym/h_vm
-        ydivep2 = -advy
-        ydivep3 = -vtwa*hvmy/h_vm
-        ydivep4 = 0.5*edlsqmy*dbl[:,np.newaxis,np.newaxis]/h_vm
+        ydivep2 = advy
+        ydivep3 = vtwa*hvmy/h_vm
+        ydivep4 = -0.5*edlsqmy*dbl[:,np.newaxis,np.newaxis]/h_vm
         ydivep = (ydivep1 + ydivep2 + ydivep3 + ydivep4)
 
-        bdivep1 = -hvwbm/h_vm
-        bdivep2 = -advb
-        bdivep3 = -vtwa*hwb_v/h_vm 
-        bdivep4 = edpfvdmb/h_vm
+        bdivep1 = hvwbm/h_vm
+        bdivep2 = advb
+        bdivep3 = vtwa*hwb_v/h_vm 
+        bdivep4 = -edpfvdmb/h_vm
         bdivep = (bdivep1 + bdivep2 + bdivep3 + bdivep4)
         Y1twa = hdiffvm/h_vm
         Y2twa = hdvdtviscm/h_vm
@@ -168,20 +168,20 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
                                     -advb[:,:,:,:,np.newaxis],
                                     cor[:,:,:,:,np.newaxis],
                                     pfvm[:,:,:,:,np.newaxis],
-                                    -xdivep[:,:,:,:,np.newaxis],
-                                    -ydivep[:,:,:,:,np.newaxis],
-                                    -bdivep[:,:,:,:,np.newaxis],
+                                    xdivep[:,:,:,:,np.newaxis],
+                                    ydivep[:,:,:,:,np.newaxis],
+                                    bdivep[:,:,:,:,np.newaxis],
                                     Y1twa[:,:,:,:,np.newaxis],
                                     Y2twa[:,:,:,:,np.newaxis]),
                                     axis=4)
-        termsep = np.concatenate((   -xdivep1[:,:,:,:,np.newaxis],
-                                        -xdivep3[:,:,:,:,np.newaxis],
-                                        -ydivep1[:,:,:,:,np.newaxis],
-                                        -ydivep3[:,:,:,:,np.newaxis],
-                                        -ydivep4[:,:,:,:,np.newaxis],
-                                        -bdivep1[:,:,:,:,np.newaxis],
-                                        -bdivep3[:,:,:,:,np.newaxis],
-                                        -bdivep4[:,:,:,:,np.newaxis]),
+        termsep = np.concatenate((   xdivep1[:,:,:,:,np.newaxis],
+                                        xdivep3[:,:,:,:,np.newaxis],
+                                        ydivep1[:,:,:,:,np.newaxis],
+                                        ydivep3[:,:,:,:,np.newaxis],
+                                        ydivep4[:,:,:,:,np.newaxis],
+                                        bdivep1[:,:,:,:,np.newaxis],
+                                        bdivep3[:,:,:,:,np.newaxis],
+                                        bdivep4[:,:,:,:,np.newaxis]),
                                         axis=4)
 
         termsm = np.nanmean(terms,meanax,keepdims=True)
