@@ -303,12 +303,12 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
 
         if i > np.size(ax)-3:
             xdegtokm(axc,0.5*(ystart+yend))
-            
+
     fig.tight_layout()
     cb = fig.colorbar(im, ax=ax.ravel().tolist())
     cb.formatter.set_powerlimits((0, 0))
     cb.update_ticks()
-    
+
     if savfilep:
         plt.savefig(savfilep+'.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
