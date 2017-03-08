@@ -97,8 +97,8 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
 
         wd = fh2.variables['wd'][slh]
         hw = wd*dbi[:,np.newaxis,np.newaxis]
-        hw = 0.5*(hw[:,:,1:,:]+hw[:,:,:-1,:])
-        wzb = -hw/dbl
+        hw = 0.5*(hw[:,1:,:,:]+hw[:,:-1,:,:])
+        wzb = -hw/dbl[:,np.newaxis,np.newaxis]
         whash = uzx + vzy + wzb
 
         terms = [utwa,vtwa,whash]
