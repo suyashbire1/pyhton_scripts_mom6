@@ -67,7 +67,7 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
         h_cv = np.ma.masked_array(h_cv,mask=(h_cv<1e-3))
         dxcv = fhgeo.variables['dxCv'][slv[2:]]
         vtwa = vh/dxcv/h_cv
-     
+ 
         emforxdiff = fh.variables['e'][slhmx]
         elmforxdiff = 0.5*(emforxdiff[:,0:-1,:,:]+emforxdiff[:,1:,:,:])
         elmforxdiff = np.concatenate((elmforxdiff,elmforxdiff[:,:,:,-1:]),axis=3)
@@ -95,8 +95,10 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
         vtwa = 0.5*(vtwa[:,:,1:,:]+vtwa[:,:,:-1,:])
         vzy = 0.5*(vzy[:,:,1:,:]+vzy[:,:,:-1,:])
 
-        wb = fh.variables['hw_Cv'][slhmy]
-        wzb = 0.5*(wb[:,:,1:,:]+wb[:,:,:-1,:])
+        wd = fh2.variables['wd'][slh]
+        hw = wd*dbi[:,np.newaxis,np.newaxis]
+        hw = 0.5*(hw[:,:,1:,:]+hw[:,:,:-1,:])
+        wzb = -hw/dbl
         whash = uzx + vzy + wzb
 
         terms = [utwa,vtwa,whash]
