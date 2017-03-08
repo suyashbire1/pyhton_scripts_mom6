@@ -107,6 +107,7 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
         Y = [dimu[keepax[0]],dimv[keepax[0]],dimh[keepax[0]]]
         termsm = []
         for item in terms:
+            item = item.filled(np.nan)
             termsm.append(np.ma.apply_over_axes(np.nanmean, item, meanax))
 
         if 1 in keepax:
