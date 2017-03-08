@@ -36,14 +36,14 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
         sl = np.s_[:,zs:ze,ys:ye,xs:xe]
         slpy = np.s_[:,zs:ze,ys:ye+1,xs:xe]
 
-        uh = fh2.variables['uh'][slpy]
-        h_cu = fh.variables['h_Cu'][slpy]
+        uh = getvaravg(fh2,'uh',slpy)
+        h_cu = getvaravg(fh,'h_Cu',slpy)
         h_cu = np.ma.masked_array(h_cu,mask=(h_cu<1e-3))
         dycu = fhgeo.variables['dyCu'][slpy[2:]]
         utwa = uh/h_cu/dycu
 
-        vh = fh2.variables['vh'][sl]
-        h_cv = fh.variables['h_Cv'][sl]
+        vh = getvaravg(fh2,'vh',sl)
+        h_cv = getvaravg(fh,'h_Cv',sl)
         h_cv = np.ma.masked_array(h_cv,mask=(h_cv<1e-3))
         dxcv = fhgeo.variables['dxCv'][sl[2:]]
         vtwa = vh/dxcv/h_cv
@@ -77,39 +77,31 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
         dycu = fhgeo.variables['dyCu'][slu[2:]]
         utwa = uh/h_cu/dycu
 
-        #vh = fh2.variables['vh'][slv]
         vh = getvaravg(fh2,'vh',slv)
-        #h_cv = fh.variables['h_Cv'][slv]
         h_cv = getvaravg(fh,'h_Cv',slv)
         h_cv = np.ma.masked_array(h_cv,mask=(h_cv<1e-3))
         dxcv = fhgeo.variables['dxCv'][slv[2:]]
         vtwa = vh/dxcv/h_cv
  
-        #emforxdiff = fh.variables['e'][slhmx]
         emforxdiff = getvaravg(fh2,'e',slhmx)
         elmforxdiff = 0.5*(emforxdiff[:,0:-1,:,:]+emforxdiff[:,1:,:,:])
         elmforxdiff = np.concatenate((elmforxdiff,elmforxdiff[:,:,:,-1:]),axis=3)
         dxcuforxdiff = fhgeo.variables['dxCu'][slhmx[2:]]
         ex = np.diff(elmforxdiff,axis=3)/dxcuforxdiff
 
-        #uh = fh2.variables['uh'][slhmx]
         uh = getvaravg(fh2,'uh',slhmx)
-        #h_cu = fh.variables['h_Cu'][slhmx]
         h_cu = getvaravg(fh,'h_Cu',slhmx)
         h_cu = np.ma.masked_array(h_cu,mask=(h_cu<1e-3))
         dycu = fhgeo.variables['dyCu'][slhmx[2:]]
         uzx = (uh/h_cu/dycu).filled(0)*ex
         uzx = 0.5*(uzx[:,:,:,1:]+uzx[:,:,:,:-1])
 
-        #emforydiff = fh.variables['e'][slhmpy]
         emforydiff = getvaravg(fh2,'e',slhmpy)
         elmforydiff = 0.5*(emforydiff[:,0:-1,:,:]+emforydiff[:,1:,:,:])
         dycv = fhgeo.variables['dyCv'][slhmy[2:]]
         ey = np.diff(elmforydiff,axis=2)/dycv
 
-        #vh = fh2.variables['vh'][slhmy]
         vh = getvaravg(fh2,'vh',slhmy)
-        #h_cv = fh.variables['h_Cv'][slhmy]
         h_cv = getvaravg(fh,'h_Cv',slhmy)
         h_cv = np.ma.masked_array(h_cv,mask=(h_cv<1e-3))
         dxcv = fhgeo.variables['dxCv'][slhmy[2:]]
@@ -118,7 +110,6 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
         vtwa = 0.5*(vtwa[:,:,1:,:]+vtwa[:,:,:-1,:])
         vzy = 0.5*(vzy[:,:,1:,:]+vzy[:,:,:-1,:])
 
-        #wd = fh2.variables['wd'][slh]
         wd = getvaravg(fh2,'wd',slh)
         hw = wd*dbi[:,np.newaxis,np.newaxis]
         hw = 0.5*(hw[:,1:,:,:]+hw[:,:-1,:,:])
@@ -126,7 +117,7 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
         whash = uzx + vzy + wzb
 
         terms = [utwa,vtwa,whash]
-        slices = [slu,slv,slh]
+        slices = [slu,slvpy,slh]
         X = [dimu[keepax[1]],dimv[keepax[1]],dimh[keepax[1]]]
         Y = [dimu[keepax[0]],dimv[keepax[0]],dimh[keepax[0]]]
         termsm = []
@@ -142,14 +133,12 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
             for i in range(len(terms)):
                 z = np.linspace(-3000,0,100)
                 em = fh2.variables['e'][slices[i]]
-                em = np.ma.apply_over_axes(np.mean, em, meanax)
                 if i == 0:
                     em = np.concatenate((em,em[:,:,:,-1:]),axis=3)
                     em = 0.5*(em[:,:,:,:-1]+em[:,:,:,1:])
                 elif i == 1:
-                    em = np.concatenate((em,em[:,:,-1:,:]),axis=2)
                     em = 0.5*(em[:,:,:-1,:]+em[:,:,1:,:])
-
+                em = np.ma.apply_over_axes(np.mean, em, meanax)
                 termsm[i] = getvaratzc(termsm[i].astype(np.float32),
                                        z.astype(np.float32),
                                        em.astype(np.float32))
