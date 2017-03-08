@@ -3,7 +3,16 @@ import matplotlib.pyplot as plt
 from mom_plot1 import m6plot, xdegtokm
 import numpy as np
 from netCDF4 import MFDataset as mfdset, Dataset as dset
+import pyximport
+pyximport.install()
+from getvaratzc import getvaratzc
 
+def getvaravg(fh,varstr,sl):
+    dt = fh.variables['average_DT'][:]
+    dt = dt[:,np.newaxis,np.newaxis,np.newaxis]
+    var = (fh.variables[varstr][sl]*dt)
+    var = np.apply_over_axes(np.sum,var,0)/np.sum(dt)
+    return var
 
 def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
         ystart,yend,zs,ze,meanax,xyasindices = False):
@@ -40,6 +49,9 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
         vtwa = vh/dxcv/h_cv
         vtwa = np.concatenate((vtwa,-vtwa[:,:,:,-1:]),axis=3)
         h_cv = np.concatenate((h_cv,h_cv[:,:,:,-1:]),axis=3)
+        fh2.close()
+        fh.close()
+        fhgeo.close()
 
         return h_cu, h_cv, utwa, vtwa
 
@@ -55,39 +67,50 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
                 zs=zs,ze=ze,ts=0,te=None,xhxq='xq',yhyq='yh',zlzi='zl')
         slv,dimv = rdp1.getslice(fh,xstart,xend,ystart,yend,
                 zs=zs,ze=ze,ts=0,te=None,xhxq='xh',yhyq='yq',zlzi='zl')
+        ys,ye = slv[2].start, slv[2].stop
+        xs,xe = slv[3].start, slv[3].stop
+        slvpy = np.s_[:,zs:ze,ys:ye+1,xs:xe]
 
-        uh = fh2.variables['uh'][slu]
-        h_cu = fh.variables['h_Cu'][slu]
+        uh = getvaravg(fh2,'uh',slu)
+        h_cu = getvaravg(fh,'h_Cu',slu)
         h_cu = np.ma.masked_array(h_cu,mask=(h_cu<1e-3))
         dycu = fhgeo.variables['dyCu'][slu[2:]]
         utwa = uh/h_cu/dycu
 
-        vh = fh2.variables['vh'][slv]
-        h_cv = fh.variables['h_Cv'][slv]
+        #vh = fh2.variables['vh'][slv]
+        vh = getvaravg(fh2,'vh',slv)
+        #h_cv = fh.variables['h_Cv'][slv]
+        h_cv = getvaravg(fh,'h_Cv',slv)
         h_cv = np.ma.masked_array(h_cv,mask=(h_cv<1e-3))
         dxcv = fhgeo.variables['dxCv'][slv[2:]]
         vtwa = vh/dxcv/h_cv
  
-        emforxdiff = fh.variables['e'][slhmx]
+        #emforxdiff = fh.variables['e'][slhmx]
+        emforxdiff = getvaravg(fh2,'e',slhmx)
         elmforxdiff = 0.5*(emforxdiff[:,0:-1,:,:]+emforxdiff[:,1:,:,:])
         elmforxdiff = np.concatenate((elmforxdiff,elmforxdiff[:,:,:,-1:]),axis=3)
         dxcuforxdiff = fhgeo.variables['dxCu'][slhmx[2:]]
         ex = np.diff(elmforxdiff,axis=3)/dxcuforxdiff
 
-        uh = fh2.variables['uh'][slhmx]
-        h_cu = fh.variables['h_Cu'][slhmx]
+        #uh = fh2.variables['uh'][slhmx]
+        uh = getvaravg(fh2,'uh',slhmx)
+        #h_cu = fh.variables['h_Cu'][slhmx]
+        h_cu = getvaravg(fh,'h_Cu',slhmx)
         h_cu = np.ma.masked_array(h_cu,mask=(h_cu<1e-3))
         dycu = fhgeo.variables['dyCu'][slhmx[2:]]
         uzx = (uh/h_cu/dycu).filled(0)*ex
         uzx = 0.5*(uzx[:,:,:,1:]+uzx[:,:,:,:-1])
 
-        emforydiff = fh.variables['e'][slhmpy]
+        #emforydiff = fh.variables['e'][slhmpy]
+        emforydiff = getvaravg(fh2,'e',slhmpy)
         elmforydiff = 0.5*(emforydiff[:,0:-1,:,:]+emforydiff[:,1:,:,:])
         dycv = fhgeo.variables['dyCv'][slhmy[2:]]
         ey = np.diff(elmforydiff,axis=2)/dycv
 
-        vh = fh2.variables['vh'][slhmy]
-        h_cv = fh.variables['h_Cv'][slhmy]
+        #vh = fh2.variables['vh'][slhmy]
+        vh = getvaravg(fh2,'vh',slhmy)
+        #h_cv = fh.variables['h_Cv'][slhmy]
+        h_cv = getvaravg(fh,'h_Cv',slhmy)
         h_cv = np.ma.masked_array(h_cv,mask=(h_cv<1e-3))
         dxcv = fhgeo.variables['dxCv'][slhmy[2:]]
         vtwa = vh/dxcv/h_cv
@@ -95,7 +118,8 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
         vtwa = 0.5*(vtwa[:,:,1:,:]+vtwa[:,:,:-1,:])
         vzy = 0.5*(vzy[:,:,1:,:]+vzy[:,:,:-1,:])
 
-        wd = fh2.variables['wd'][slh]
+        #wd = fh2.variables['wd'][slh]
+        wd = getvaravg(fh2,'wd',slh)
         hw = wd*dbi[:,np.newaxis,np.newaxis]
         hw = 0.5*(hw[:,1:,:,:]+hw[:,:-1,:,:])
         wzb = -hw/dbl[:,np.newaxis,np.newaxis]
@@ -107,34 +131,44 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
         Y = [dimu[keepax[0]],dimv[keepax[0]],dimh[keepax[0]]]
         termsm = []
         for item in terms:
-            item = item.filled(np.nan)
+            try:
+                item = item.filled(np.nan)
+            except AttributeError:
+                item = item
             termsm.append(np.ma.apply_over_axes(np.nanmean, item, meanax))
 
         if 1 in keepax:
-            X1 = []
             Y = []
             for i in range(len(terms)):
-                em = fh.variables['e'][slices[i]]
-                elm = 0.5*(em[:,:-1] + em[:,1:])
+                z = np.linspace(-3000,0,100)
+                em = fh2.variables['e'][slices[i]]
                 em = np.ma.apply_over_axes(np.mean, em, meanax)
-                elm = np.ma.apply_over_axes(np.mean, elm, meanax)
-                Y.append(elm.squeeze())
-                X1.append(np.meshgrid(X[i],dimh[1])[0])
-            X = X1
+                if i == 0:
+                    em = np.concatenate((em,em[:,:,:,-1:]),axis=3)
+                    em = 0.5*(em[:,:,:,:-1]+em[:,:,:,1:])
+                elif i == 1:
+                    em = np.concatenate((em,em[:,:,-1:,:]),axis=2)
+                    em = 0.5*(em[:,:,:-1,:]+em[:,:,1:,:])
+
+                termsm[i] = getvaratzc(termsm[i].astype(np.float32),
+                                       z.astype(np.float32),
+                                       em.astype(np.float32))
+                Y.append(z)
 
         fh2.close()
         fh.close()
+        fhgeo.close()
 
         P = []
         for i, item in enumerate(termsm):
-            P.append(np.ma.filled(item.squeeze().astype(float),np.nan))
+            P.append(item.squeeze())
             X[i] = np.ma.filled(X[i].astype(float), np.nan)
             Y[i] = np.ma.filled(Y[i].astype(float), np.nan)
 
         return X,Y,P
 
 def plot_uv(geofil,vgeofil,fil,fil2,xstart,xend,
-            ystart,yend,zs,ze,meanax,minperc = [5,3,0],xyasindices = False):
+            ystart,yend,zs,ze,meanax,minperc = [1,1,0],xyasindices = False):
 
     X,Y,P = getuv(geofil,vgeofil,fil,fil2,xstart,xend,
             ystart,yend,zs,ze,meanax,xyasindices = False)
@@ -150,7 +184,7 @@ def plot_uv(geofil,vgeofil,fil,fil2,xstart,xend,
         cmax = np.nanpercentile(P[i],[minperc[i],100-minperc[i]])
         cmax = np.max(np.fabs(cmax))
         axc = ax.ravel()[i]
-        im = m6plot((X[i],Y[i],P[i]),axc,vmax=cmax,vmin=-cmax,
+        im = m6plot((X[i],Y[i],P[i]),axc,vmax=cmax,vmin=-cmax,ptype='imshow',
                     txt=lab[i], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
         cb = fig.colorbar(im, ax=axc)
         cb.formatter.set_powerlimits((0, 0))
