@@ -12,7 +12,8 @@ import matplotlib.animation as animation
 from getvaratz import *
 
 def plotoceanstats(fil,savfil=None):
-    (layer,interface,time), (en,ape,ke), (maxcfltrans,maxcfllin), ntrunc = rdp.getoceanstats(fil)
+    ((layer,interface,time), (en,ape,ke), (maxcfltrans,maxcfllin), ntrunc,
+    (mass_lay, mass_chg, mass_anom)) = rdp.getoceanstats(fil)
     time /= 365
     ax =plt.subplot(4,1,1)
     im1 = plt.plot(time,maxcfltrans)
@@ -43,6 +44,35 @@ def plotoceanstats(fil,savfil=None):
                     format='eps', transparent=False, bbox_inches='tight')
     else:
         plt.show()
+    timedt = time[1:]
+    dt = np.diff(time)[:,np.newaxis]
+    dt[dt==0] = np.nan
+    ape[ape==0] = np.nan
+    ke[ke==0] = np.nan
+    mass_lay[mass_lay==0] = np.nan
+    dape = np.diff(ape,axis=0)/ape[:-1,:]/dt
+    dke = np.diff(ke,axis=0)/ke[:-1,:]/dt
+    dm = np.diff(mass_lay,axis=0)/mass_lay[:-1,:]/dt
+    for i in range(layer.size):
+        fig,ax = plt.subplots(4,1,sharex=True)
+        ax[0].plot(timedt,dape[:,i])
+        ax[0].set_ylabel(r'$\frac{1}{APE}\frac{d APE}{dt} (day^{-1})$')
+        ax[1].plot(timedt,dke[:,i])
+        ax[1].set_ylabel(r'$\frac{1}{KE}\frac{d KE}{dt} (day^{-1})$')
+        ax[2].plot(timedt,dm[:,i])
+        ax[2].set_ylabel(r'$\frac{1}{M}\frac{d M}{dt} (day^{-1})$')
+        ax[3].plot(time,mass_lay[:,i]/layer[i])
+        ax[3].set_ylabel(r'Layer volume (m$^3$)')
+        ax[3].set_xlabel('Time (years)')
+        for axc in ax.ravel():
+            axc.get_yaxis().set_label_coords(-0.1,0.5)
+            axc.grid()
+        if savfil:
+            plt.savefig(savfil+'_{}_rates.png'.format(i),facecolor='w', edgecolor='w', 
+                    format='png', transparent=False, bbox_inches='tight')
+            plt.close(fig)
+        else:
+            plt.show()
 
 def plotvel(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,twa=True,savfil=None):
 

@@ -105,4 +105,7 @@ def getoceanstats(filename):
     maxcfltrans = fh.variables['max_CFL_trans'][:]
     maxcfllin = fh.variables['max_CFL_lin'][:]
     ntrunc = fh.variables['Ntrunc'][:]
-    return (layer,interface,time), (en,ape,ke), (maxcfltrans,maxcfllin), ntrunc
+    mass = fh.variables['Mass_lay'][:]
+    mass_chg = fh.variables['Mass_chg'][:]
+    mass_anom = fh.variables['Mass_anom'][:]
+    return (layer,interface,time), (en,ape,ke), (maxcfltrans,maxcfllin), ntrunc, (mass,mass_chg,mass_anom)
