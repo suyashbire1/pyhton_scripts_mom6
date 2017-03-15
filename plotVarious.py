@@ -10,8 +10,63 @@ import readParams_moreoptions as rdp1
 from manipulateDomain import *
 import matplotlib.animation as animation
 from getvaratz import *
+import xarray as xr
 
 def plotoceanstats(fil,savfil=None):
+    ds = xr.open_mfdataset(fil)
+    ds['Time'] /= 365
+
+    fig,ax = plt.subplots(4,1,sharex=True,figsize=(9,9))
+    ds.max_CFL_trans.plot(ax=ax[0])
+    ds.APE.sum('Interface').plot(ax=ax[1])
+    ds.KE.sum('Layer').plot(ax=ax[2])
+    ds.Ntrunc.plot(ax=ax[3])
+    for axc in ax:
+        axc.grid()
+        axc.get_yaxis().set_label_coords(-0.1,0.5)
+    
+    if savfil:
+        plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
+                    format='eps', transparent=False, bbox_inches='tight')
+    else:
+        plt.show()
+
+    time = ds.Time.values
+    timedt = time[1:]
+    dt = np.diff(time)[:,np.newaxis]
+    dt[dt==0] = np.nan
+    ape = ds.APE.values
+    ape[ape==0] = np.nan
+    ke = ds.KE.values
+    ke[ke==0] = np.nan
+    mass_lay = ds.Mass_lay.values
+    mass_lay[mass_lay==0] = np.nan
+    dape = np.diff(ape,axis=0)/ape[:-1,:]/dt
+    dke = np.diff(ke,axis=0)/ke[:-1,:]/dt
+    dm = np.diff(mass_lay,axis=0)/mass_lay[:-1,:]/dt
+    layer = ds.Layer.values
+    for i in range(layer.size):
+        fig,ax = plt.subplots(4,1,sharex=True)
+        ax[0].plot(timedt,dape[:,i])
+        ax[0].set_ylabel(r'$\frac{1}{APE}\frac{d APE}{dt} (day^{-1})$')
+        ax[1].plot(timedt,dke[:,i])
+        ax[1].set_ylabel(r'$\frac{1}{KE}\frac{d KE}{dt} (day^{-1})$')
+        ax[2].plot(timedt,dm[:,i])
+        ax[2].set_ylabel(r'$\frac{1}{M}\frac{d M}{dt} (day^{-1})$')
+        ax[3].plot(time,mass_lay[:,i]/layer[i])
+        ax[3].set_ylabel(r'Layer volume (m$^3$)')
+        ax[3].set_xlabel('Time (years)')
+        for axc in ax.ravel():
+            axc.get_yaxis().set_label_coords(-0.1,0.5)
+            axc.grid()
+        if savfil:
+            plt.savefig(savfil+'_{}_rates.png'.format(i),facecolor='w', edgecolor='w', 
+                    format='png', transparent=False, bbox_inches='tight')
+            plt.close(fig)
+        else:
+            plt.show()
+
+def plotoceanstats1(fil,savfil=None):
     ((layer,interface,time), (en,ape,ke), (maxcfltrans,maxcfllin), ntrunc,
     (mass_lay, mass_chg, mass_anom)) = rdp.getoceanstats(fil)
     time /= 365

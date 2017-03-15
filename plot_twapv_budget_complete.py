@@ -9,7 +9,6 @@ from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
 from plot_twamomx_budget_complete_direct_newest import extract_twamomx_terms
 from plot_twamomy_budget_complete_direct_newest import extract_twamomy_terms
-from plot_twauvpv import getuv
 import pyximport
 pyximport.install()
 from getvaratzc import getvaratzc5, getvaratzc
