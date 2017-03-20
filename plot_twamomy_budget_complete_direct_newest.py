@@ -101,13 +101,18 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
 
         huvxphvvym = (fh.variables['twa_huvxpt'][0:,zs:ze,ys:ye,xs:xe]*dt +
                 fh.variables['twa_hvvymt'][0:,zs:ze,ys:ye,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
-        #v = (fh.variables['v_masked'][0:,zs:ze,ys-1:ye+1,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
-        #hvv = v*vhforydiff
-        #hvvym = np.diff(hvv,axis=2)/dxt/dyt
-        #hvvym = 0.5*(hvvym[:,:,:-1,:] + hvvym[:,:,1:,:])
-        hvv = (fh.variables['hvv_T'][0:,zs:ze,ys:ye+1,xs:xe]*dt).sum(axis=0,keepdims=True)*dxt/np.sum(dt)
-        hvvym = np.diff(hvv,axis=2)/dycv/dxcv
-        huvxm = huvxphvvym + hvvym
+        hvv = (fh.variables['hvv_Cv'][0:,zs:ze,ys-1:ye+1,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
+        hvvym = np.diff(hvv,axis=2)/dxt/dyt
+        hvvym = 0.5*(hvvym[:,:,:-1,:] + hvvym[:,:,1:,:])
+#        hvv = (fh.variables['hvv_T'][0:,zs:ze,ys:ye+1,xs:xe]*dt).sum(axis=0,keepdims=True)*dxt/np.sum(dt)
+#        hvvym = np.diff(hvv,axis=2)/dycv/dxcv
+        huvxm = -(huvxphvvym + hvvym)
+
+#        hvv = (fh.variables['hvv_Cv'][0:,zs:ze,ys-1:ye+1,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
+#        hvvym = np.diff(hvv,axis=2)/dxt/dyt
+#        hvvym = 0.5*(hvvym[:,:,:-1,:] + hvvym[:,:,1:,:])
+#        huv = (fh.variables['huv_Bu'][0:,zs:ze,ys:ye,xs-1:xe].filled(0)*dt).sum(axis=0,keepdims=True)/np.sum(dt)
+#        huvxm = np.diff(huv,axis=3)/dxcv
 
         vtwaforvdiff = np.concatenate((vtwa[:,[0],:,:],vtwa),axis=1)
         vtwab = np.diff(vtwaforvdiff,axis=1)/db[:,np.newaxis,np.newaxis]
@@ -144,7 +149,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         cor = hmfum/h_vm
         pfvm = pfvm
 
-        xdivep1 = huvxm/h_vm
+        xdivep1 = -huvxm/h_vm
         xdivep2 = advx
         xdivep3 = vtwa*humx/h_vm 
         xdivep = (xdivep1 + xdivep2 + xdivep3)

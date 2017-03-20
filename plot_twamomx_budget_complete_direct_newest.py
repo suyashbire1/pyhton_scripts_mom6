@@ -108,13 +108,13 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         huuxphuvym = (fh.variables['twa_huuxpt'][0:,zs:ze,ys:ye,xs:xe]*dt +
                 fh.variables['twa_huvymt'][0:,zs:ze,ys:ye,xs:xe]*dt).filled(np.nan).sum(axis=0,keepdims=True)/np.sum(dt)
         #u = (fh.variables['u_masked'][0:,zs:ze,ys:ye,xs-1:xe]*dt).filled(np.nan).sum(axis=0,keepdims=True)/np.sum(dt)
-        #huu = uhforxdiff*u
-        #huuxm = np.diff(np.nan_to_num(huu),axis=3)/dxt/dyt
-        #huuxm = np.concatenate((huuxm,-huuxm[:,:,:,-1:]),axis=3)
-        #huuxm = 0.5*(huuxm[:,:,:,:-1] + huuxm[:,:,:,1:])
-        huu = (fh.variables['huu_T'][0:,zs:ze,ys:ye,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)*dyt
-        huu = np.concatenate((huu,-huu[:,:,:,-1:]),axis=3)
-        huuxm = np.diff(huu,axis=3)/dxcu/dycu
+        huu = (fh.variables['huu_Cu'][0:,zs:ze,ys:ye,xs-1:xe]*dt).filled(np.nan).sum(axis=0,keepdims=True)/np.sum(dt)
+        huuxm = np.diff(np.nan_to_num(huu),axis=3)/dxt/dyt
+        huuxm = np.concatenate((huuxm,-huuxm[:,:,:,-1:]),axis=3)
+        huuxm = 0.5*(huuxm[:,:,:,:-1] + huuxm[:,:,:,1:])
+#        huu = (fh.variables['huu_T'][0:,zs:ze,ys:ye,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)*dyt
+#        huu = np.concatenate((huu,-huu[:,:,:,-1:]),axis=3)
+#        huuxm = np.diff(huu,axis=3)/dxcu/dycu
         huvym = huuxphuvym + huuxm
 
         utwaforvdiff = np.concatenate((utwa[:,[0],:,:],utwa),axis=1)
