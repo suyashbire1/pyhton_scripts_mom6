@@ -205,10 +205,10 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
             Y = z
             P = getvaratzc5(termsm.astype(np.float32),
                     z.astype(np.float32),
-                    em.astype(np.float32)).squeeze()
+                    em.astype(np.float32))
             Pep = getvaratzc5(termsepm.astype(np.float32),
                     z.astype(np.float32),
-                    em.astype(np.float32)).squeeze()
+                    em.astype(np.float32))
             if fil3:
                 swash = np.nanmean(swash,meanax,keepdims=True)
                 swash = getvaratzc(swash.astype(np.float32),
@@ -234,7 +234,7 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
     X,Y,P,Pep,swash = extract_twamomx_terms(geofil,vgeofil,fil,fil2,
                                         xstart,xend,ystart,yend,zs,ze,
                                         meanax, alreadysaved=alreadysaved,fil3=fil3)
-    P = np.ma.masked_array(P,mask=np.isnan(P))
+    P = np.ma.masked_array(P,mask=np.isnan(P)).squeeze()
     cmax = np.nanpercentile(P,[cmaxpercfactor,100-cmaxpercfactor])
     cmax = np.max(np.fabs(cmax))
     fig,ax = plt.subplots(np.int8(np.ceil(len(plotterms)/2)),2,
@@ -281,7 +281,7 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
     else:
         plt.show()
 
-    Pep = np.ma.masked_array(Pep,mask=np.isnan(Pep))
+    Pep = np.ma.masked_array(Pep,mask=np.isnan(Pep)).squeeze()
     cmax = np.nanpercentile(Pep,[cmaxpercfactorforep,100-cmaxpercfactorforep])
     cmax = np.max(np.fabs(cmax))
 

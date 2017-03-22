@@ -125,7 +125,7 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
 
     P = []
     for i, item in enumerate(termsm):
-        P.append(item.squeeze())
+        P.append(item)
         X[i] = np.ma.filled(X[i].astype(float), np.nan)
         Y[i] = np.ma.filled(Y[i].astype(float), np.nan)
 
@@ -145,6 +145,7 @@ def plot_uv(geofil,vgeofil,fil,fil2,xstart,xend,
 
     for i in range(len(P)):
         P[i] = np.ma.masked_array(P[i],mask=np.isnan(P[i]))
+        P[i] = P[i].squeeze()
         cmax = np.nanpercentile(P[i],[minperc[i],100-minperc[i]])
         cmax = np.max(np.fabs(cmax))
         axc = ax.ravel()[i]
