@@ -53,9 +53,12 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
 
         if fil3:
             fh3 = mfdset(fil3)
-            islayerdeep0 = fh3.variables['islayerdeep'][:,0,0,0].sum()
-            islayerdeep = (fh3.variables['islayerdeep'][slmx].filled(np.nan)).sum(axis=0,
-                                                                               keepdims=True)
+            slmxtn = np.s_[-1:,:,ys:ye,xs-1:xe]
+#            islayerdeep0 = fh3.variables['islayerdeep'][:,0,0,0].sum()
+#            islayerdeep = (fh3.variables['islayerdeep'][slmx].filled(np.nan)).sum(axis=0,
+#                                                                               keepdims=True)
+            islayerdeep0 = fh3.variables['islayerdeep'][-1:,0,0,0]
+            islayerdeep = (fh3.variables['islayerdeep'][slmxtn].filled(np.nan))
             islayerdeep[:,:,:,-1:] = islayerdeep[:,:,:,-2:-1]
             swash = (islayerdeep0 - islayerdeep)/islayerdeep0*100
             swash = 0.5*(swash[:,:,:,:-1] + swash[:,:,:,1:])

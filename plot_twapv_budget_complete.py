@@ -84,9 +84,9 @@ def extract_twapv_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,me
 
         if fil3:
             fh3 = mfdset(fil3)
-            islayerdeep0 = fh3.variables['islayerdeep'][:,0,0,0].sum()
-            islayerdeep = (fh3.variables['islayerdeep'][sl].filled(np.nan)).sum(axis=0,
-                                                                               keepdims=True)
+            sltn = np.s_[-1:,zs:ze,ys:ye,xs:xe]
+            islayerdeep0 = fh3.variables['islayerdeep'][-1:,0,0,0]
+            islayerdeep = (fh3.variables['islayerdeep'][sltn].filled(np.nan))
             swash = (islayerdeep0 - islayerdeep)/islayerdeep0*100
             fh3.close()
         else:
