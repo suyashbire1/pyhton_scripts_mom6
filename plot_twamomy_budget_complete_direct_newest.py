@@ -10,7 +10,8 @@ pyximport.install()
 from getvaratzc import getvaratzc5, getvaratzc
 
 def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
-      fil3=None,alreadysaved=False,xyasindices=False,calledfrompv=False, htol=1e-3):
+      fil3=None,alreadysaved=False,xyasindices=False,calledfrompv=False, 
+      z=np.linspace(-3000,0,100),htol=1e-3):
 
     if not alreadysaved:
         keepax = ()
@@ -200,7 +201,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         if 1 in keepax and not calledfrompv:
             em = np.nanmean(em,axis=meanax,keepdims=True)
             elm = np.nanmean(elm,axis=meanax,keepdims=True)
-            z = np.linspace(-3000,0,100)
+            #z = np.linspace(-3000,0,100)
             Y = z
             P = getvaratzc5(termsm.astype(np.float32),
                     z.astype(np.float32),
