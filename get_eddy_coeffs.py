@@ -137,6 +137,115 @@ def get_heddy_coeffs(geofil,vgeofil,fil,fil2,
     ax[1].grid()
     return fig, fig2, fig3
 
+def get_heddy_coeffs_fromflx(geofil,vgeofil,fil,fil2,
+                     xstart,xend,ystart,yend,zs=0,ze=None,
+                     z=np.linspace(-3000,0,100),perc=5,htol=1e-3):
+
+    fhgeo = dset(geofil)
+    fhvgeo = dset(vgeofil)
+    fh = mfdset(fil)
+    fh2 = mfdset(fil2)
+    db = fhvgeo.variables['g'][:]
+    fhvgeo.close()
+    dbi = np.append(db,0)
+    zi = fh.variables['zi'][:]
+    zl = fh.variables['zl'][:]
+    dbl = np.diff(zi)*9.8/1031
+    dt = fh.variables['average_DT'][:]
+    dt = dt[:,np.newaxis,np.newaxis,np.newaxis]
+
+    sl, dimv = rdp1.getslice(fh,xstart,xend,ystart,yend,yhyq='yq')
+    slmx = np.s_[:,:,sl[2],(sl[3].start-1):sl[3].stop]
+    slpx = np.s_[:,:,sl[2],(sl[3].start+1):sl[3].stop]
+    slmxpy = np.s_[:,:,sl[2].start:(sl[2].stop+1),(sl[3].start-1):sl[3].stop]
+    slpy = np.s_[:,:,sl[2].start:(sl[2].stop+1),sl[3]]
+    slmpy = np.s_[:,:,(sl[2].start-1):(sl[2].stop+1),sl[3]]
+    sl2d = sl[2:]
+    slmx2d = slmx[2:]
+    slpx2d = slpx[2:]
+    slpy2d = slpy[2:]
+
+    dxbu = fhgeo.variables['dxBu'][slmx2d]
+    dybu = fhgeo.variables['dyBu'][slmx2d]
+    dxcv = fhgeo.variables['dxCv'][sl2d]
+    dycv = fhgeo.variables['dyCv'][sl2d]
+    dxt = fhgeo.variables['dxT'][slpy2d]
+    dyt = fhgeo.variables['dyT'][slpy2d]
+
+    v,_ = pv.getvtwa(fhgeo, fh, fh2, slmx)
+    vx = np.diff(v,axis=3)/dxbu
+    vx = vx[:,:,:,1:]
+    e = (fh2.variables['e'][slpy]*dt).sum(axis=0,keepdims=True)/dt.sum(axis=0,keepdims=True)
+    eatv = 0.5*(e[:,:,:-1,:] + e[:,:,1:,:])
+
+    e = fh2.variables['e'][slmxpy]
+    eatvmx = 0.5*(e[:,:,:-1,:] + e[:,:,1:,:])
+
+    vh = (fh.variables['vh_masked'][sl]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
+    h_cv = (fh.variables['h_Cv'][sl]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
+    h_cv[h_cv < htol] = np.nan
+    sig = h_cv/dbl[:,np.newaxis,np.newaxis]
+    h_vm = h_cv
+    vtwa = vh/h_cv/dxcv
+    vhforxdiff = (fh.variables['vh_masked'][slmx]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
+    h_cvforxdiff = (fh.variables['h_Cv'][slmx]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
+    h_cvforxdiff[h_cvforxdiff < htol] = np.nan
+    vtwaforxdiff = vhforxdiff/h_cvforxdiff
+    vtwaforxdiff = np.concatenate((vtwaforxdiff,vtwaforxdiff[:,:,:,-1:]),axis=3)
+    vtwax = np.diff(vtwaforxdiff,axis=3)/dxbu/dybu
+    vtwax = 0.5*(vtwax[:,:,:,:-1] + vtwax[:,:,:,1:])
+    uh = (fh.variables['uh_masked'][slmxpy]*dt).filled(0).sum(axis=0,keepdims=True)/np.sum(dt)
+    hum = 0.25*(uh[:,:,:-1,:-1] + uh[:,:,:-1,1:] + uh[:,:,1:,:-1] +
+            uh[:,:,1:,1:])/dycv
+    huvxphvvym = (fh.variables['twa_huvxpt'][sl]*dt +
+            fh.variables['twa_hvvymt'][sl]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
+    hvv = (fh.variables['hvv_Cv'][slmpy]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
+    hvvym = np.diff(hvv,axis=2)/dxt/dyt
+    hvvym = 0.5*(hvvym[:,:,:-1,:] + hvvym[:,:,1:,:])
+    huvxm = -(huvxphvvym + hvvym)
+    advx = hum*vtwax/h_vm
+    humx = np.diff(np.nan_to_num(uh),axis=3)/dxt/dyt
+    humx = 0.5*(humx[:,:,:-1,:] + humx[:,:,1:,:])
+    xdivep1 = -huvxm/h_vm
+    xdivep2 = advx
+    xdivep3 = vtwa*humx/h_vm 
+    xdivep = (xdivep1 + xdivep2 + xdivep3)
+
+    xdivep *= sig 
+    uv = sint.cumtrapz(xdivep[:,:,:,::-1],dx=-dxbu[:,1:-1], axis=3,
+            initial=0)[:,:,:,::-1]
+    
+    uvm = np.apply_over_axes(np.nanmean,uv,(0,2))
+    vxm = np.apply_over_axes(np.nanmean,vx,(0,2))
+    uvm = getvaratzc(uvm.astype(np.float32),
+                     z.astype(np.float32),
+                     eatv.astype(np.float32))
+    vxm = getvaratzc(vxm.astype(np.float32),
+                     z.astype(np.float32),
+                     eatv.astype(np.float32))
+
+    fig,ax = plt.subplots(1,2,sharex=True,sharey=True,figsize=(12,3))
+    cmax = np.fabs(np.percentile(uvm,(1,99))).max()
+    im = ax[0].pcolormesh(dimv[3],z,uvm.squeeze(),
+                          vmax=cmax, vmin=-cmax, cmap='RdBu_r')
+    cmax = np.fabs(np.percentile(vxm,(1,99))).max()
+    im = ax[1].pcolormesh(dimv[3],z,vxm.squeeze(),
+                          vmax=cmax, vmin=-cmax, cmap='RdBu_r')
+    for axc in ax:
+        xdegtokm(axc,0.5*(ystart+yend))
+        axc.set_xlabel('x (km)')
+        axc.grid()
+    ax[0].set_ylabel('z (m)')
+
+    fig2,ax = plt.subplots(1,1,sharey=True)
+    ax.linfit(vx,uv)
+    ax.set_xlabel('v_x (m/s)')
+    ax.set_ylabel('RS (m2/s2)')
+    ax.grid()
+
+    return fig, fig2
+
+
 def get_deddy_coeffs(geofil,vgeofil,fil,fil2,
                      xstart,xend,ystart,yend,zs=0,ze=None,
                      z=np.linspace(-1500,0,100),perc=5):
@@ -277,6 +386,7 @@ def get_deddy_coeffs_fromflx(geofil,vgeofil,fil,fil2,
     vi = 0.5*(vi[:,:-1,:,:] + vi[:,1:,:,:])
     vib = -np.diff(vi,axis=1)/dbl[:,np.newaxis,np.newaxis]
     fsqvb = f**2*vb#*sigi
+    #fsqvb = vb*sigi
     fsqvbaz = getvaratzc(fsqvb.astype(np.float32),
                      z.astype(np.float32),
                      eatv.astype(np.float32))
