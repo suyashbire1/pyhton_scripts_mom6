@@ -7,17 +7,30 @@ import pyximport
 pyximport.install()
 from getvaratzc import getvaratzc, getTatzc
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import importlib
 importlib.reload(pv)
 importlib.reload(py)
 from mom_plot1 import m6plot, xdegtokm
+import scipy.integrate as sint
 
-def linfit(x,y):
-    idx = np.isfinite(y) & np.isfinite(x)
+def linfit(self,x,y,percx=0,percy=0):
+    idx = (np.isfinite(y) 
+           & np.isfinite(x) 
+           & (y > np.nanpercentile(y,percy)) 
+           & (y < np.nanpercentile(y,100-percy))
+           & (x > np.nanpercentile(x,percx)) 
+           & (x < np.nanpercentile(x,100-percx)))
     fit = np.polyfit(x[idx],y[idx],1)
     fit_fn = np.poly1d(fit)
-    yfit = fit_fn(x)
-    return fit, yfit
+    yfit = fit_fn(x[idx])
+    self.plot(x[idx].ravel(),y[idx].ravel(),'.')
+    self.plot(x[idx].ravel(),yfit.ravel(),'k-')
+    self.text(0.05,0.95,
+            'y = {:.2e}*x + {:.2e}'.format(fit[0],fit[1]),
+            transform=self.transAxes)
+
+mpl.axes.Axes.linfit = linfit
 
 def get_heddy_coeffs(geofil,vgeofil,fil,fil2,
                      xstart,xend,ystart,yend,zs=0,ze=None,
@@ -33,6 +46,8 @@ def get_heddy_coeffs(geofil,vgeofil,fil,fil2,
     zi = fh.variables['zi'][:]
     zl = fh.variables['zl'][:]
     dbl = np.diff(zi)*9.8/1031
+    dt = fh.variables['average_DT'][:]
+    dt = dt[:,np.newaxis,np.newaxis,np.newaxis]
 
     sl, dimv = rdp1.getslice(fh,xstart,xend,ystart,yend,yhyq='yq')
     slmx = np.s_[:,:,sl[2],(sl[3].start-1):sl[3].stop]
@@ -49,7 +64,7 @@ def get_heddy_coeffs(geofil,vgeofil,fil,fil2,
     v,_ = pv.getvtwa(fhgeo, fh, fh2, slmx)
     vx = np.diff(v,axis=3)/dxbu
     vxx = np.diff(vx,axis=3)/dxcv
-    e = fh2.variables['e'][slpy]
+    e = (fh2.variables['e'][slpy]*dt).sum(axis=0,keepdims=True)/dt.sum(axis=0,keepdims=True)
     eatv = 0.5*(e[:,:,:-1,:] + e[:,:,1:,:])
     vxx = getvaratzc(vxx.astype(np.float32),
                      z.astype(np.float32),
@@ -70,31 +85,6 @@ def get_heddy_coeffs(geofil,vgeofil,fil,fil2,
     uv = P[:,:,:,:,5]
 
     vvalid = vaz[:,:,:,1:-1]
-    idxv = np.isfinite(uv) & np.isfinite(vvalid)
-    fitv = np.polyfit(vvalid[idxv],uv[idxv],1)
-    fitv_fn = np.poly1d(fitv)
-
-    idxvperc = (np.isfinite(uv) 
-            & np.isfinite(vvalid) 
-            & (uv > np.nanpercentile(uv,perc)) 
-            & (uv < np.nanpercentile(uv,100-perc))
-            & (vvalid > np.nanpercentile(vvalid,perc)) 
-            & (vvalid < np.nanpercentile(vvalid,100-perc)))
-    fitvperc = np.polyfit(vvalid[idxvperc],uv[idxvperc],1)
-    fitvperc_fn = np.poly1d(fitv)
-
-    idxvxx = np.isfinite(uv) & np.isfinite(vxx)
-    fitvxx = np.polyfit(vxx[idxvxx],uv[idxvxx],1)
-    fitvxx_fn = np.poly1d(fitv)
-
-    idxvxxperc = (np.isfinite(uv) 
-            & np.isfinite(vxx) 
-            & (uv > np.nanpercentile(uv,perc)) 
-            & (uv < np.nanpercentile(uv,100-perc))
-            & (vxx > np.nanpercentile(vxx,perc)) 
-            & (vxx < np.nanpercentile(vxx,100-perc)))
-    fitvxxperc = np.polyfit(vxx[idxvxxperc],uv[idxvxxperc],1)
-    fitvxxperc_fn = np.poly1d(fitv)
 
     vazm = np.apply_over_axes(np.nanmean,vvalid,(0,2))
     vxxm = np.apply_over_axes(np.nanmean,vxx,(0,2))
@@ -127,30 +117,24 @@ def get_heddy_coeffs(geofil,vgeofil,fil,fil2,
     ax[0].set_ylabel('z (m)')
 
     fig2,ax = plt.subplots(1,2,sharey=True)
-    ax[0].plot(vvalid[idxv],uv[idxv],'.')
-    ax[0].plot(vvalid[idxv],fitv_fn(vvalid[idxv]),'k-')
+    ax[0].linfit(vvalid,uv)
     ax[0].set_xlabel('v (m/s)')
-    ax[0].set_ylabel('duvdx (m2/s2)')
+    ax[0].set_ylabel('RS div (m/s2)')
     ax[0].grid()
-    ax[0].text(0.05,0.95,'{:.2e}*v + {:.2e}'.format(fitv[0],fitv[1]),transform=ax[0].transAxes)
-    ax[1].plot(vxx[idxvxx],uv[idxvxx],'.')
-    ax[1].plot(vxx[idxvxx],fitvxx_fn(vxx[idxvxx]),'k-')
+
+    ax[1].linfit(vxx,uv)
     ax[1].set_xlabel('vxx (1/ms)')
     ax[1].grid()
-    ax[1].text(0.05,0.95,'{:5.2f}*vxx + {:.2e}'.format(fitvxx[0],fitvxx[1]),transform=ax[1].transAxes)
 
     fig3,ax = plt.subplots(1,2,sharey=True)
-    ax[0].plot(vvalid[idxvperc],uv[idxvperc],'.')
-    ax[0].plot(vvalid[idxvperc],fitvperc_fn(vvalid[idxvperc]),'k-')
+    ax[0].linfit(vvalid,uv,perc=perc)
     ax[0].set_xlabel('v (m/s)')
-    ax[0].set_ylabel('duvdx (m2/s2)')
+    ax[0].set_ylabel('RS div (m/s2)')
     ax[0].grid()
-    ax[0].text(0.05,0.95,'{:.2e}*v + {:.2e}'.format(fitvperc[0],fitvperc[1]),transform=ax[0].transAxes)
-    ax[1].plot(vxx[idxvxxperc],uv[idxvxxperc],'.')
-    ax[1].plot(vxx[idxvxxperc],fitvxxperc_fn(vxx[idxvxxperc]),'k-')
+
+    ax[1].linfit(vxx,uv,perc=perc)
     ax[1].set_xlabel('vxx (1/ms)')
     ax[1].grid()
-    ax[1].text(0.05,0.95,'{:5.2f}*vxx + {:.2e}'.format(fitvxxperc[0],fitvxxperc[1]),transform=ax[1].transAxes)
     return fig, fig2, fig3
 
 def get_deddy_coeffs(geofil,vgeofil,fil,fil2,
@@ -171,6 +155,7 @@ def get_deddy_coeffs(geofil,vgeofil,fil,fil2,
     sl, dimv = rdp1.getslice(fh,xstart,xend,ystart,yend,yhyq='yq')
     sl2d = sl[2:]
     slpy = np.s_[:,:,sl[2].start:(sl[2].stop+1),sl[3]]
+    f = fhgeo.variables['f'][sl2d]
 
     e = fh2.variables['e'][slpy]
     eatv = 0.5*(e[:,:,:-1,:] + e[:,:,1:,:])
@@ -178,6 +163,9 @@ def get_deddy_coeffs(geofil,vgeofil,fil,fil2,
     v = v[:,:,:,:-1]
     h = h[:,:,:,:-1]
     sig = h/dbl[:,np.newaxis,np.newaxis]
+    sigaz = getvaratzc(sig.astype(np.float32),
+                     z.astype(np.float32),
+                     eatv.astype(np.float32))
 
     vb = -np.diff(v,axis=1)/dbi[1:-1,np.newaxis,np.newaxis]
     vb = np.concatenate((vb[:,:1,:,:],vb,vb[:,-1:,:,:]),axis=1)
@@ -210,18 +198,6 @@ def get_deddy_coeffs(geofil,vgeofil,fil,fil2,
                                          zs,ze,(0,),z=z)
     fdrag = P[:,:,:,:,7]
 
-    idx = np.isfinite(fdrag) & np.isfinite(vbb)
-    fit = np.polyfit(vbb[idx],fdrag[idx],1)
-    fit_fn = np.poly1d(fit)
-
-    idxsvibb = np.isfinite(fdrag) & np.isfinite(svibb)
-    fitsvibb = np.polyfit(svibb[idxsvibb],fdrag[idxsvibb],1)
-    fitsvibb_fn = np.poly1d(fitsvibb)
-
-    idxsvbb = np.isfinite(fdrag) & np.isfinite(svbb)
-    fitsvbb = np.polyfit(vbb[idxsvbb],fdrag[idxsvbb],1)
-    fitsvbb_fn = np.poly1d(fitsvbb)
-
     vbbm = np.apply_over_axes(np.nanmean,vbb,(0,2))
     svibbm = np.apply_over_axes(np.nanmean,svibb,(0,2))
     svbbm = np.apply_over_axes(np.nanmean,svbb,(0,2))
@@ -248,12 +224,12 @@ def get_deddy_coeffs(geofil,vgeofil,fil,fil2,
                           vmax=cmax, vmin=-cmax, cmap='RdBu_r')
     fig.colorbar(im,ax=ax[3])
 
-    fig2,ax = plt.subplots(1,3,sharey=True)
-    ax[0].plot(vbb.ravel(),fdrag.ravel(),'.')
+    fig2,ax = plt.subplots(1,3,sharey=True,figsize=(12,3))
+    ax[0].linfit(vbb,sigaz*fdrag/f**2)
     ax[0].set_xlabel(r'$v_{bb}$')
-    ax[1].plot(svibb.ravel(),fdrag.ravel(),'.')
+    ax[1].linfit(svibb,sigaz*fdrag/f**2)
     ax[1].set_xlabel(r'$(\sigma v_b)_b$')
-    ax[2].plot(svbb.ravel(),fdrag.ravel(),'.')
+    ax[2].linfit(svbb,sigaz*fdrag/f**2)
     ax[2].set_xlabel(r'$(\sigma v)_{bb}$')
 
     ax[0].set_ylabel('Form Drag')
@@ -262,9 +238,9 @@ def get_deddy_coeffs(geofil,vgeofil,fil,fil2,
 
     return fig, fig2
 
-def get_veddy_coeffs(geofil,vgeofil,fil,fil2,
+def get_deddy_coeffs_fromflx(geofil,vgeofil,fil,fil2,
                      xstart,xend,ystart,yend,zs=0,ze=None,
-                     z=np.linspace(-1500,0,100),perc=5):
+                     z=np.linspace(-1500,0,100),percx=0,percy=0):
 
     fhgeo = dset(geofil)
     fhvgeo = dset(vgeofil)
@@ -276,85 +252,69 @@ def get_veddy_coeffs(geofil,vgeofil,fil,fil2,
     zi = fh.variables['zi'][:]
     zl = fh.variables['zl'][:]
     dbl = np.diff(zi)*9.8/1031
-    dz = np.diff(z)[:1]
+    dt = fh.variables['average_DT'][:]
+    dt = dt[:,np.newaxis,np.newaxis,np.newaxis]
 
     sl, dimv = rdp1.getslice(fh,xstart,xend,ystart,yend,yhyq='yq')
     sl2d = sl[2:]
+    dycv = fhgeo.variables['dyCv'][sl2d]
     slpy = np.s_[:,:,sl[2].start:(sl[2].stop+1),sl[3]]
+    f = fhgeo.variables['f'][sl2d]
 
-    e = fh2.variables['e'][slpy]
+    e = (fh2.variables['e'][slpy]*dt).sum(axis=0,keepdims=True)/dt.sum(axis=0)
     eatv = 0.5*(e[:,:,:-1,:] + e[:,:,1:,:])
     v,h = pv.getvtwa(fhgeo, fh, fh2, sl)
     v = v[:,:,:,:-1]
     h = h[:,:,:,:-1]
     sig = h/dbl[:,np.newaxis,np.newaxis]
-    sig = getvaratzc(sig.astype(np.float32),
-                   z.astype(np.float32),
-                   eatv.astype(np.float32))
+    hi = 0.5*(h[:,:-1]+h[:,1:])
+    sigi = hi/dbi[1:-1,np.newaxis,np.newaxis]
 
-    v = getvaratzc(v.astype(np.float32),
-                   z.astype(np.float32),
-                   eatv.astype(np.float32))
-    vz = -np.diff(v,axis=1)/dz
-    vzz = -np.diff(vz,axis=1)/dz
+    vb = -np.diff(v,axis=1)/dbi[1:-1,np.newaxis,np.newaxis]
+    #vb = np.concatenate((vb[:,:1,:,:],vb,vb[:,-1:,:,:]),axis=1)
 
-    svz = 0.5*(sig[:,:-1,:,:]+sig[:,1:,:,:])*vz
-    svzz = -np.diff(svz,axis=1)/dz
+    vi = np.concatenate((v[:,:1,:,:],v,-v[:,-1:,:,:]),axis=1)
+    vi = 0.5*(vi[:,:-1,:,:] + vi[:,1:,:,:])
+    vib = -np.diff(vi,axis=1)/dbl[:,np.newaxis,np.newaxis]
+    fsqvb = f**2*vb#*sigi
+    fsqvbaz = getvaratzc(fsqvb.astype(np.float32),
+                     z.astype(np.float32),
+                     eatv.astype(np.float32))
 
-    sv = sig*v
-    svz1 = -np.diff(sv,axis=1)/dz
-    svzz1 = -np.diff(svz1,axis=1)/dz
+    esq = (fh.variables['esq'][slpy]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
+    elmforydiff = 0.5*(e[:,0:-1,:,:]+e[:,1:,:,:])
+    edlsqm = (esq - elmforydiff**2)
+    edlsqmy = np.diff(edlsqm,axis=2)/dycv
 
-    x,y,P,_,_ = py.extract_twamomy_terms(geofil,vgeofil,fil,fil2,
-                                         xstart,xend,ystart,yend,
-                                         zs,ze,(0,),z=z)
-    fdrag = P[:,:,:,:,7]
+    hpfv = (fh.variables['twa_hpfv'][sl]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
+    pfvm = (fh2.variables['PFv'][sl]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
+    edpfvdmb = -(-hpfv + h*pfvm - 0.5*edlsqmy*dbl[:,np.newaxis,np.newaxis])
 
-    fit, vzzfit = linfit(vzz,fdrag[:,1:-1,:,:])
-    fitsvzz, svzzfit = linfit(svzz,fdrag[:,1:-1,:,:])
-    fitsvzz1, svzz1fit = linfit(svzz1,fdrag[:,1:-1,:,:])
+    zdpfvd = sint.cumtrapz(edpfvdmb,dx=-dbl[0], axis=1)
+#    zdpfvd = np.concatenate((np.zeros(zdpfvd[:,:1,:,:].shape),
+#                             zdpfvd,
+#                             np.zeros(zdpfvd[:,:1,:,:].shape)),axis=1)
+#    zdpfvd = 0.5*(zdpfvd[:,:-1,:,:]+zdpfvd[:,1:,:,:])
+    zdpfvdaz = getvaratzc(zdpfvd.astype(np.float32),
+                     z.astype(np.float32),
+                     eatv.astype(np.float32))
 
-    vzzm = np.apply_over_axes(np.nanmean,vzz,(0,2))
-    svzzm = np.apply_over_axes(np.nanmean,svzz,(0,2))
-    svzz1m = np.apply_over_axes(np.nanmean,svzz1,(0,2))
-    fdragm = np.apply_over_axes(np.nanmean,fdrag,(0,2))
+    fsqvbazm = np.apply_over_axes(np.nanmean,fsqvbaz,(0,2))
+    zdpfvdazm = np.apply_over_axes(np.nanmean,zdpfvdaz,(0,2))
 
-    fig,ax = plt.subplots(1,4,sharex=True,sharey=True,figsize=(12,3))
-    cmax = np.fabs(np.percentile(vzzm,(1,99))).max()
-    im = ax[0].pcolormesh(dimv[3],z[1:-1],vzzm.squeeze(),
+    fig,ax = plt.subplots(1,2,sharex=True,sharey=True,figsize=(12,3))
+    cmax = np.fabs(np.percentile(zdpfvdazm,(1,99))).max()
+    im = ax[0].pcolormesh(dimv[3],z,zdpfvdazm.squeeze(),
                           vmax=cmax, vmin=-cmax, cmap='RdBu_r')
     fig.colorbar(im,ax=ax[0])
 
-    cmax = np.fabs(np.percentile(svzzm,(1,99))).max()
-    im = ax[1].pcolormesh(dimv[3],z[1:-1],svzzm.squeeze(),
+    cmax = np.fabs(np.percentile(fsqvbazm,(1,99))).max()
+    im = ax[1].pcolormesh(dimv[3],z,fsqvbazm.squeeze(),
                           vmax=cmax, vmin=-cmax, cmap='RdBu_r')
     fig.colorbar(im,ax=ax[1])
 
-    cmax = np.fabs(np.percentile(svzz1m,(1,99))).max()
-    im = ax[2].pcolormesh(dimv[3],z[1:-1],svzz1m.squeeze(),
-                          vmax=cmax, vmin=-cmax, cmap='RdBu_r')
-    fig.colorbar(im,ax=ax[2])
-
-    cmax = np.fabs(np.percentile(fdragm,(1,99))).max()
-    im = ax[3].pcolormesh(dimv[3],z,fdragm.squeeze(),
-                          vmax=cmax, vmin=-cmax, cmap='RdBu_r')
-    fig.colorbar(im,ax=ax[3])
-
-    fig2,ax = plt.subplots(1,3,sharey=True, figsize=(12,3))
-    ax[0].plot(vzz.ravel(),fdrag[:,1:-1].ravel(),'.')
-    ax[0].plot(vzz.ravel(),vzzfit.ravel(),'k-')
-    ax[0].text(0.05,0.95,'{:.2e}*x + {:.2e}'.format(fit[0],fit[1]),transform=ax[0].transAxes)
-    ax[0].set_xlabel(r'$v_{zz}$')
-    ax[1].plot(svzz.ravel(),fdrag[:,1:-1].ravel(),'.')
-    ax[1].plot(svzz.ravel(),svzzfit.ravel(),'k-')
-    ax[1].set_xlabel(r'$(\sigma v_z)_z$')
-    ax[1].text(0.05,0.95,r'{:.2e}*x + {:.2e}'.format(fitsvzz[0],fitsvzz[1]),transform=ax[1].transAxes)
-    ax[2].plot(svzz1.ravel(),fdrag[:,1:-1].ravel(),'.')
-    ax[2].plot(svzz1.ravel(),svzz1fit.ravel(),'k-')
-    ax[2].set_xlabel(r'$(\sigma v)_{zz}$')
-    ax[2].text(0.05,0.95,r'{:.2e}*x + {:.2e}'.format(fitsvzz1[0],fitsvzz1[1]),transform=ax[2].transAxes)
-
-    for axc in ax:
-        axc.grid()
-
-    return fig, fig2
+    fig2,ax = plt.subplots(1,1,sharey=True,figsize=(12,3))
+    ax.linfit(fsqvbaz,zdpfvdaz,percx=percx,percy=percy)
+    ax.set_xlabel(r'$f^2 v_b$')
+    ax.set_ylabel(r'$\zeta^{\prime} m_y^{\prime}$')
+    return fig,fig2
