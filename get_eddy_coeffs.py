@@ -34,7 +34,7 @@ mpl.axes.Axes.linfit = linfit
 
 def get_heddy_coeffs(geofil,vgeofil,fil,fil2,
                      xstart,xend,ystart,yend,zs=0,ze=None,
-                     z=np.linspace(-3000,0,100),perc=5):
+                     z=np.linspace(-3000,0,100),percx=0,percy=0):
 
     fhgeo = dset(geofil)
     fhvgeo = dset(vgeofil)
@@ -117,25 +117,16 @@ def get_heddy_coeffs(geofil,vgeofil,fil,fil2,
     ax[0].set_ylabel('z (m)')
 
     fig2,ax = plt.subplots(1,2,sharey=True)
-    ax[0].linfit(vvalid,uv)
+    ax[0].linfit(vvalid,uv,percx=percx,percy=percy)
     ax[0].set_xlabel('v (m/s)')
     ax[0].set_ylabel('RS div (m/s2)')
     ax[0].grid()
 
-    ax[1].linfit(vxx,uv)
+    ax[1].linfit(vxx,uv,percx=percx,percy=percy)
     ax[1].set_xlabel('vxx (1/ms)')
     ax[1].grid()
 
-    fig3,ax = plt.subplots(1,2,sharey=True)
-    ax[0].linfit(vvalid,uv,perc=perc)
-    ax[0].set_xlabel('v (m/s)')
-    ax[0].set_ylabel('RS div (m/s2)')
-    ax[0].grid()
-
-    ax[1].linfit(vxx,uv,perc=perc)
-    ax[1].set_xlabel('vxx (1/ms)')
-    ax[1].grid()
-    return fig, fig2, fig3
+    return fig, fig2
 
 def get_heddy_coeffs_fromflx(geofil,vgeofil,fil,fil2,
                      xstart,xend,ystart,yend,zs=0,ze=None,
@@ -213,7 +204,7 @@ def get_heddy_coeffs_fromflx(geofil,vgeofil,fil,fil2,
 
     xdivep *= sig 
     uv = sint.cumtrapz(xdivep[:,:,:,::-1],dx=-dxbu[:,1:-1], axis=3,
-            initial=0)[:,:,:,::-1]
+            initial=0)[:,:,:,::-1]/sig
     
     uvm = np.apply_over_axes(np.nanmean,uv,(0,2))
     vxm = np.apply_over_axes(np.nanmean,vx,(0,2))
@@ -349,7 +340,8 @@ def get_deddy_coeffs(geofil,vgeofil,fil,fil2,
 
 def get_deddy_coeffs_fromflx(geofil,vgeofil,fil,fil2,
                      xstart,xend,ystart,yend,zs=0,ze=None,
-                     z=np.linspace(-1500,0,100),percx=0,percy=0):
+                     zlim=(-1500,0),percx=0,percy=0,
+                     nsqdep=False,fil3=None,swashperc=1):
 
     fhgeo = dset(geofil)
     fhvgeo = dset(vgeofil)
@@ -363,12 +355,14 @@ def get_deddy_coeffs_fromflx(geofil,vgeofil,fil,fil2,
     dbl = np.diff(zi)*9.8/1031
     dt = fh.variables['average_DT'][:]
     dt = dt[:,np.newaxis,np.newaxis,np.newaxis]
+    z = np.linspace(zlim[0],zlim[1],100)
 
     sl, dimv = rdp1.getslice(fh,xstart,xend,ystart,yend,yhyq='yq')
     sl2d = sl[2:]
     dycv = fhgeo.variables['dyCv'][sl2d]
     slpy = np.s_[:,:,sl[2].start:(sl[2].stop+1),sl[3]]
     f = fhgeo.variables['f'][sl2d]
+
 
     e = (fh2.variables['e'][slpy]*dt).sum(axis=0,keepdims=True)/dt.sum(axis=0)
     eatv = 0.5*(e[:,:,:-1,:] + e[:,:,1:,:])
@@ -385,8 +379,11 @@ def get_deddy_coeffs_fromflx(geofil,vgeofil,fil,fil2,
     vi = np.concatenate((v[:,:1,:,:],v,-v[:,-1:,:,:]),axis=1)
     vi = 0.5*(vi[:,:-1,:,:] + vi[:,1:,:,:])
     vib = -np.diff(vi,axis=1)/dbl[:,np.newaxis,np.newaxis]
-    fsqvb = f**2*vb#*sigi
-    #fsqvb = vb*sigi
+    if nsqdep:
+        fsqvb = f**2*vb*sigi
+    else:
+        fsqvb = f**2*vb
+
     fsqvbaz = getvaratzc(fsqvb.astype(np.float32),
                      z.astype(np.float32),
                      eatv.astype(np.float32))
@@ -399,6 +396,10 @@ def get_deddy_coeffs_fromflx(geofil,vgeofil,fil,fil2,
     hpfv = (fh.variables['twa_hpfv'][sl]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
     pfvm = (fh2.variables['PFv'][sl]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
     edpfvdmb = -(-hpfv + h*pfvm - 0.5*edlsqmy*dbl[:,np.newaxis,np.newaxis])
+
+    fh.close()
+    fh2.close()
+    fhgeo.close()
 
     zdpfvd = sint.cumtrapz(edpfvdmb,dx=-dbl[0], axis=1)
 #    zdpfvd = np.concatenate((np.zeros(zdpfvd[:,:1,:,:].shape),
@@ -422,6 +423,30 @@ def get_deddy_coeffs_fromflx(geofil,vgeofil,fil,fil2,
     im = ax[1].pcolormesh(dimv[3],z,fsqvbazm.squeeze(),
                           vmax=cmax, vmin=-cmax, cmap='RdBu_r')
     fig.colorbar(im,ax=ax[1])
+
+    if fil3:
+        fh3 = mfdset(fil3)
+        slmxtn = np.s_[-1:,sl[1],sl[2],(sl[3].start-1):sl[3].stop]
+        islayerdeep0 = fh3.variables['islayerdeep'][-1:,0,0,0]
+        islayerdeep = fh3.variables['islayerdeep'][slmxtn]
+        if np.ma.is_masked(islayerdeep):
+            islayerdeep = islayerdeep.filled(np.nan)
+            islayerdeep[:,:,:,-1:] = islayerdeep[:,:,:,-2:-1]
+
+        swash = (islayerdeep0 - islayerdeep)/islayerdeep0*100
+        swash = 0.5*(swash[:,:,:,:-1] + swash[:,:,:,1:])
+        fh3.close()
+        swash = getvaratzc(swash.astype(np.float32),
+                             z.astype(np.float32),
+                             eatv.astype(np.float32))
+        swash = np.apply_over_axes(np.nanmean,swash,(0,2))
+        em = np.apply_over_axes(np.nanmean,e,(0,2))
+        xx,zz = np.meshgrid(dimv[3],zi)
+        for axc in ax:
+            axc.contour(dimv[3],z,swash.squeeze(),np.array([swashperc]),
+                    colors='k')
+            axc.contour(xx,em.squeeze(),zz,ls='k--')
+            axc.set_ylim(zlim[0],zlim[1])
 
     fig2,ax = plt.subplots(1,1,sharey=True,figsize=(12,3))
     ax.linfit(fsqvbaz,zdpfvdaz,percx=percx,percy=percy)
