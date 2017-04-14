@@ -314,8 +314,9 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
     for i,p in enumerate(plotterms):
         axc = ax.ravel()[i]
         im = m6plot((X,Y,Pnew[:,:,p]),axc,vmax=cmax,vmin=-cmax,ptype='imshow',
-                ylim=(-2500,0), txt=lab[p], 
+                ylim=(-1200,0), txt=lab[p], 
                 cmap='RdBu_r', cbar=False)
+        im2 = axc.contour(X,Y,pvhash,np.logspace(-6,-5.5,5),colors='k')
         if fil3:
             cs = axc.contour(X,Y,swash,np.array([swashperc]), colors='k')
         if i % 2 == 0:

@@ -138,8 +138,8 @@ def plot_uv(geofil,vgeofil,fil,fil2,xstart,xend,
             ystart,yend,zs,ze,meanax,xyasindices = False)
 
 
-    fig,ax = plt.subplots(len(P),1,sharex=True,sharey=True,
-                          figsize=(6/(0.5*(1+np.sqrt(5))),6))
+    fig,ax = plt.subplots(1,len(P),sharex=True,sharey=True,
+                          figsize=(8,4))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
     lab = [r'$\widehat{u}$',r'$\widehat{v}$',r'$w^{\#}$']
 
@@ -154,8 +154,7 @@ def plot_uv(geofil,vgeofil,fil,fil2,xstart,xend,
         cb = fig.colorbar(im, ax=axc)
         cb.formatter.set_powerlimits((0, 0))
         cb.update_ticks()
-                                                
-        axc.set_ylabel('z (m)')
-        if i == np.size(ax)-1:
-            xdegtokm(axc,0.5*(ystart+yend))
+        if i == 0: 
+            axc.set_ylabel('z (m)') 
+        xdegtokm(axc,0.5*(ystart+yend))
     return fig

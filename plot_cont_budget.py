@@ -89,26 +89,25 @@ def plot_cb(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         savfil=None):
     X,Y,P = extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax)
     cmax = np.nanmax(np.absolute(P))
-    fig = plt.figure(figsize=(12, 9))
+    fig,axc = plt.subplots(1,2,sharex=True,sharey=True,figsize=(8, 3))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
     lab = [ r'$(\bar{h}\hat{u})_{\tilde{x}}$', 
             r'$(\bar{h}\hat{v})_{\tilde{y}}$', 
             r'$(\bar{h}\hat{\varpi})_{\tilde{b}}$'] 
 
-    for i in range(P.shape[-1]):
-        ax = plt.subplot(5,2,i+1)
-        im = m6plot((X,Y,P[:,:,i]),ax,vmax=cmax,vmin=-cmax,
-                txt=lab[i], ylim=(-2500,0),cmap='RdBu_r')
-        if i % 2:
-            ax.set_yticklabels([])
-        else:
+    for i in range(P.shape[-1]-1):
+        ax = axc[i]
+        im = m6plot((X,Y,P[:,:,i]),ax,vmax=cmax,vmin=-cmax,#ptype='imshow',
+                txt=lab[i], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
+
+        xdegtokm(ax,0.5*(ystart+yend))
+        if i == 0:
             ax.set_ylabel('z (m)')
 
-        if i > 0:
-            xdegtokm(ax,0.5*(ystart+yend))
-
-        else:
-            ax.set_xticklabels([])
+    fig.tight_layout()
+    cb = fig.colorbar(im, ax=axc.ravel().tolist())
+    cb.formatter.set_powerlimits((0, 0))
+    cb.update_ticks()
     
     if savfil:
         plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
