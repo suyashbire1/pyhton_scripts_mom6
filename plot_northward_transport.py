@@ -49,29 +49,26 @@ def plot_nt(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
         cmaxscalefactor = 1, savfil=None):
     X,Y,P,lr = extract_northward_transport(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax)
     cmax = np.nanmax(np.absolute(P))*cmaxscalefactor
-    fig = plt.figure(figsize=(15, 9))
-    ti = r'$\int_{-D}^{0} (vdx) dz$ $(m^3s^{-1})$' 
+    fig,ax = plt.subplots(1,3,sharey=True,figsize=(8, 4))
+    ti = [r'$\int_{-D}^{0} (vdx) dz$ $(m^3s^{-1}) \forall v>0$',
+            r'$\int_{-D}^{0} (vdx) dz$ $(m^3s^{-1}) \forall v<0$']
     for i in range(P.shape[-1]):
-        ax = plt.subplot(1,3,i+1)
-        if i == 1:
-            im = m6plot((X,Y,P[:,:,i]),ax,vmax=cmax,vmin=-cmax,txt=ti,cmap='RdBu_r')
-            ax.plot(-np.nanmean(lr,axis=1),Y,lw=2,color='k')
-            ax.grid(True)
-            ax.set_yticklabels([])
-        else:
-            im = m6plot((X,Y,P[:,:,i]),ax,vmax=cmax,vmin=-cmax,txt=ti,cmap='RdBu_r')
-            ax.plot(-np.nanmean(lr,axis=1),Y,lw=2,color='k')
-            ax.grid(True)
-            ax.set_ylabel(r'$y (^{\circ}$)')
-        xdegtokm(ax,0.5*(ystart+yend))
+        im = m6plot((X,Y,P[:,:,i]),ax[i],vmax=cmax,vmin=-cmax,ptype='imshow',
+                cmap='RdBu_r',cbar=False)
+        ax[i].plot(-np.nanmean(lr,axis=1),Y,lw=2,color='k')
+        ax[i].grid(True)
+        xdegtokm(ax[i],0.5*(ystart+yend))
+    ax[0].set_ylabel(r'y ($^{\circ}$)')
+    fig.tight_layout()
+    cb = fig.colorbar(im,ax=[ax[0],ax[1]])
+    cb.formatter.set_powerlimits((0, 0))
+    cb.update_ticks()
 
-    ax = plt.subplot(1,3,3)
-    ax.plot(np.nansum(P[:,:,0],axis=1)/1e3,Y,lw=2,label='North',color='r')
-    ax.plot(np.nansum(-P[:,:,1],axis=1)/1e3,Y,lw=2,label='South',color='b')
-    ax.set_xlabel('EB transport ($10^3 m^3s^{-1}$)')
-    ax.set_yticklabels([])
-    ax.text(0.1,0.05,r'$\int_{D}^{0} \int_{EB}^{} v dx dz$ ($m^3s^{-1}$)',transform=ax.transAxes)
-    ax.grid(True)
+    ax[2].plot(np.nansum(P[:,:,0],axis=1)/1e3,Y,lw=2,label='North',color='r')
+    ax[2].plot(np.nansum(-P[:,:,1],axis=1)/1e3,Y,lw=2,label='South',color='b')
+    ax[2].set_xlabel('EB transport ($10^3 m^3s^{-1}$)')
+    #ax.text(0.1,0.05,r'$\int_{D}^{0} \int_{EB}^{} v dx dz$ ($m^3s^{-1}$)',transform=ax.transAxes)
+    ax[2].grid(True)
     plt.legend(loc='best')
 
 #    ax = plt.subplot(1,4,1)
@@ -82,7 +79,7 @@ def plot_nt(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
 #    plt.tight_layout()
     
     if savfil:
-        plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w',
-                    format='eps', transparent=False, bbox_inches='tight')
+        plt.savefig(savfil+'.eps', dpi=300, facecolor='w',
+                    format='eps', transparent=True, bbox_inches='tight')
     else:
         plt.show()

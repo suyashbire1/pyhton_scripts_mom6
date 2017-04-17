@@ -47,12 +47,14 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
     slvpy = np.s_[:,zs:ze,ys:ye+1,xs:xe]
 
     uh = getvaravg(fh2,'uh',slu)
+    u = getvaravg(fh2,'u',slu)
     h_cu = getvaravg(fh,'h_Cu',slu)
     h_cu = np.ma.masked_array(h_cu,mask=(h_cu<1e-3))
     dycu = fhgeo.variables['dyCu'][slu[2:]]
     utwa = uh/h_cu/dycu
 
     vh = getvaravg(fh2,'vh',slv)
+    v = getvaravg(fh2,'v',slv)
     h_cv = getvaravg(fh,'h_Cv',slv)
     h_cv = np.ma.masked_array(h_cv,mask=(h_cv<1e-3))
     dxcv = fhgeo.variables['dxCv'][slv[2:]]
@@ -88,7 +90,7 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
     wd = getvaravg(fh2,'wd',slh)
     hw = wd*dbi[:,np.newaxis,np.newaxis]
     hw = 0.5*(hw[:,1:,:,:]+hw[:,:-1,:,:])
-    wzb = -hw/dbl[:,np.newaxis,np.newaxis]
+    wzb = hw/dbl[:,np.newaxis,np.newaxis]
     whash = uzx + vzy + wzb
 
     terms = [utwa,vtwa,whash]
@@ -138,8 +140,8 @@ def plot_uv(geofil,vgeofil,fil,fil2,xstart,xend,
             ystart,yend,zs,ze,meanax,xyasindices = False)
 
 
-    fig,ax = plt.subplots(1,len(P),sharex=True,sharey=True,
-                          figsize=(8,4))
+    fig,ax = plt.subplots(len(P),1,sharex=True,sharey=True,
+                          figsize=(4,6))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
     lab = [r'$\widehat{u}$',r'$\widehat{v}$',r'$w^{\#}$']
 
@@ -154,7 +156,7 @@ def plot_uv(geofil,vgeofil,fil,fil2,xstart,xend,
         cb = fig.colorbar(im, ax=axc)
         cb.formatter.set_powerlimits((0, 0))
         cb.update_ticks()
-        if i == 0: 
-            axc.set_ylabel('z (m)') 
-        xdegtokm(axc,0.5*(ystart+yend))
+        if i == len(P)-1: 
+            xdegtokm(axc,0.5*(ystart+yend))
+        axc.set_ylabel('z (m)') 
     return fig

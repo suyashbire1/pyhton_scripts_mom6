@@ -84,3 +84,31 @@ cpdef np.ndarray[DTYPE_t, ndim=4] getTatzc(np.ndarray[DTYPE_t] zl,
                         if (e[l,k,j,i] - z[m])*(e[l,k+1,j,i] - z[m]) <= 0:
                             varout[l,m,j,i] = zl[k]
     return varout
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef np.ndarray[DTYPE_t, ndim=4] getTatzc2(np.ndarray[DTYPE_t] zi,
+                                           np.ndarray[DTYPE_t] z,
+                                           np.ndarray[DTYPE_t, ndim=4] e):
+    """Cython function to get a variable at fixed depths"""
+    assert zi.dtype == DTYPE
+    assert z.dtype == DTYPE
+    assert e.dtype == DTYPE
+    
+    cdef unsigned int nt, nl, ny, nx, nz
+    cdef unsigned int i, j, k, l, m
+    nt, nl, ny, nx = np.shape(e)
+    nl = np.size(zi) - 1.0
+    nz = np.size(z)
+    cdef np.ndarray[DTYPE_t, ndim=4] varout = np.full((nt,nz,ny,nx), 
+                                                      0, dtype=DTYPE)
+    
+    for l in range(nt):
+        for k in range(nl):
+            for j in range(ny):
+                for i in range(nx):
+                    for m in range(nz):
+                        if (e[l,k,j,i] - z[m])*(e[l,k+1,j,i] - z[m]) <= 0:
+                            varout[l,m,j,i] = (zi[k] +
+                            ((zi[k+1]-zi[k])/(e[l,k+1,j,i]-e[l,k,j,i])*(z[m]-e[l,k,j,i])))
+    return varout

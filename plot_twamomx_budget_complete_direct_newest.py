@@ -238,7 +238,7 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
     cmax = np.nanpercentile(P,[cmaxpercfactor,100-cmaxpercfactor])
     cmax = np.max(np.fabs(cmax))
     fig,ax = plt.subplots(np.int8(np.ceil(len(plotterms)/2)),2,
-                          sharex=True,sharey=True,figsize=(12, 4.5))
+                          sharex=True,sharey=True,figsize=(12, 2.5))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
     lab = [ r'$-\hat{u}\hat{u}_{\tilde{x}}$',
             r'$-\hat{v}\hat{u}_{\tilde{y}}$',
