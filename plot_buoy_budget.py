@@ -71,7 +71,6 @@ def getwhash(fhgeo,vgeofil,fh,fh2,sl,htol=1e-3):
     dxcv = fhgeo.variables['dxCv'][slmy[2:]]
     vtwa = vh/dxcv/h_cv
     vzy = vtwa*ey
-    vtwa = 0.5*(vtwa[:,:,1:,:]+vtwa[:,:,:-1,:])
     vzy = 0.5*(vzy[:,:,1:,:]+vzy[:,:,:-1,:])
 
     wd = getvaravg(fh2,'wd',sl)
@@ -116,7 +115,7 @@ def extract_buoy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
     bz = getvaratzc(bz.astype(np.float32),
                  z.astype(np.float32),
                  e.astype(np.float32))
-    whash = getwhash(fhgeo,vgeofil,fh,fh2,sl)
+    whash = getwhash(fhgeo,vgeofil,fh,fh2,sl,htol=htol)
     whash = getvaratzc(whash.astype(np.float32),
                        z.astype(np.float32),
                        e.astype(np.float32))
@@ -128,7 +127,7 @@ def extract_buoy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
                     efxd.astype(np.float32))
     bfxd = np.concatenate((bfxd,bfxd[:,:,:,-1:]),axis=3)
     bx = np.diff(bfxd,axis=3)/dxcu
-    u = getutwa(fhgeo,fh,fh2,slmx)
+    u = getutwa(fhgeo,fh,fh2,slmx,htol=htol)
     e_cu = np.concatenate((efxd,efxd[:,:,:,-1:]),axis=3)
     e_cu = 0.5*(e_cu[:,:,:,:-1]+e_cu[:,:,:,1:])
     u = getvaratzc(u.astype(np.float32),
@@ -143,7 +142,7 @@ def extract_buoy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
                     efyd.astype(np.float32))
     by = np.diff(bfyd,axis=2)/dycv
     e_cv = 0.5*(efyd[:,:,:-1,:]+efyd[:,:,1:,:])
-    v = getvtwa(fhgeo,fh,fh2,slmy)
+    v = getvtwa(fhgeo,fh,fh2,slmy,htol=htol)
     v = getvaratzc(v.astype(np.float32),
                    z.astype(np.float32),
                    e_cv.astype(np.float32))

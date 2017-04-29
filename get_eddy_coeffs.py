@@ -1,6 +1,7 @@
 import readParams_moreoptions as rdp1
 from netCDF4 import MFDataset as mfdset, Dataset as dset
 import plot_twapv_budget_complete as pv
+import plot_twapv_complete2 as pv2
 import plot_twamomy_budget_complete_direct_newest as py
 import numpy as np
 import pyximport
@@ -10,6 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import importlib
 importlib.reload(pv)
+importlib.reload(pv2)
 importlib.reload(py)
 from mom_plot1 import m6plot, xdegtokm
 import scipy.integrate as sint
@@ -21,13 +23,18 @@ def linfit(self,x,y,percx=0,percy=0):
            & (y < np.nanpercentile(y,100-percy))
            & (x > np.nanpercentile(x,percx)) 
            & (x < np.nanpercentile(x,100-percx)))
-    fit = np.polyfit(x[idx],y[idx],1)
+    x = x[idx]
+    y = y[idx]
+    fit = np.polyfit(x,y,1)
     fit_fn = np.poly1d(fit)
-    yfit = fit_fn(x[idx])
-    self.plot(x[idx].ravel(),y[idx].ravel(),'.')
-    self.plot(x[idx].ravel(),yfit.ravel(),'k-')
+    yfit = fit_fn(x)
+    rsq = 1 - np.sum((yfit-y)**2)/np.sum((y-np.mean(y))**2)
+    self.plot(x.ravel(),y.ravel(),'.')
+    self.plot(x.ravel(),yfit.ravel(),'k-')
     self.text(0.05,0.95,
             'y = {:.2e}*x + {:.2e}'.format(fit[0],fit[1]),
+            transform=self.transAxes)
+    self.text(0.05,0.85,r'R$^2$ = {:.2f}'.format(rsq),
             transform=self.transAxes)
 
 mpl.axes.Axes.linfit = linfit
@@ -453,3 +460,91 @@ def get_deddy_coeffs_fromflx(geofil,vgeofil,fil,fil2,
     ax.set_xlabel(r'$f^2 v_b$')
     ax.set_ylabel(r'$\zeta^{\prime} m_y^{\prime}$')
     return fig,fig2
+
+def get_pveddy_coeffs(geofil,vgeofil,fil,fil2,
+                     xstart,xend,ystart,yend,zs=0,ze=None,
+                     z=np.linspace(-3000,0,100),percx=0,percy=0):
+
+    fhgeo = dset(geofil)
+    fhvgeo = dset(vgeofil)
+    fh = mfdset(fil)
+    fh2 = mfdset(fil2)
+    db = fhvgeo.variables['g'][:]
+    fhvgeo.close()
+    dbi = np.append(db,0)
+    zi = fh.variables['zi'][:]
+    zl = fh.variables['zl'][:]
+    dbl = np.diff(zi)*9.8/1031
+    dt = fh.variables['average_DT'][:]
+    dt = dt[:,np.newaxis,np.newaxis,np.newaxis]
+
+    sl, dimq = rdp1.getslice(fh,xstart,xend,ystart,yend,xhxq='xq',yhyq='yq')
+    xs = sl[3].start
+    xe = sl[3].stop
+    ys = sl[2].start
+    ye = sl[2].stop
+    zs = sl[1].start
+    ze = sl[1].stop
+    slmx = np.s_[:,:,sl[2],(sl[3].start-1):sl[3].stop]
+    slpx = np.s_[:,:,sl[2],(sl[3].start+1):sl[3].stop]
+    slmxpy = np.s_[:,:,sl[2].start:(sl[2].stop+1),(sl[3].start-1):sl[3].stop]
+    slpy = np.s_[:,:,sl[2].start:(sl[2].stop+1),sl[3]]
+    sl2d = sl[2:]
+    slmx2d = slmx[2:]
+    slpx2d = slpx[2:]
+
+    dxbu = fhgeo.variables['dxBu'][sl2d]
+    dxcv = fhgeo.variables['dxCv'][sl2d]
+    e = (fh2.variables['e'][slpy]*dt).sum(axis=0,keepdims=True)/dt.sum(axis=0,keepdims=True)
+    e = np.concatenate((e,e[:,:,:,-1:]),axis=3)
+    eatq = 0.25*(e[:,:,:-1,:-1] + e[:,:,1:,1:] + e[:,:,1:,:-1] + e[:,:,:-1,1:])
+
+    (_,_,_,q,_,_) = pv2.extract_twapv_terms(geofil,vgeofil,fil,fil2,xs-1,xe,
+                                                ys,ye,zs,ze,meanax=(0,),fil3=None, 
+                                                calledfromgeteddycoeffs=True)
+    (_,_,_,_,qbud,_) = pv2.extract_twapv_terms(geofil,vgeofil,fil,fil2,xs,xe,
+                                                ys,ye,zs,ze,meanax=(0,),fil3=None, 
+                                                calledfromgeteddycoeffs=True)
+    fd = qbud[:,:,:,:,12]
+    q[np.isnan(q)] = 0
+    qx = np.diff(q,axis=3)/dxcv
+    qx = np.concatenate((qx,qx[:,:,:,-1:]),axis=3)
+    qxx = np.diff(qx,axis=3)/dxbu
+
+    fdaz = getvaratzc(fd.astype(np.float32),
+                     z.astype(np.float32),
+                     eatq.astype(np.float32))
+    qxxaz = getvaratzc(qxx.astype(np.float32),
+                     z.astype(np.float32),
+                     eatq.astype(np.float32))
+
+    qxxazm = np.apply_over_axes(np.nanmean,qxxaz,(0,2))
+    fdazm = np.apply_over_axes(np.nanmean,fdaz,(0,2))
+
+    fig,ax = plt.subplots(1,2,sharex=True,sharey=True,figsize=(12,3))
+    cmax = np.fabs(np.nanpercentile(qxxazm,(1,99))).max()
+    im = ax[0].pcolormesh(dimq[3],z,qxxazm.squeeze(),
+                          vmax=cmax, vmin=-cmax, cmap='RdBu_r')
+    cb = fig.colorbar(im,ax=ax[0])
+    cb.formatter.set_powerlimits((0, 0))
+    cb.update_ticks() 
+    cmax = np.fabs(np.nanpercentile(fdazm,(1,99))).max()
+    im = ax[1].pcolormesh(dimq[3],z,fdazm.squeeze(),
+                          vmax=cmax, vmin=-cmax, cmap='RdBu_r')
+    cb = fig.colorbar(im,ax=ax[1])
+    cb.formatter.set_powerlimits((0, 0))
+    cb.update_ticks() 
+    for axc in ax:
+        xdegtokm(axc,0.5*(ystart+yend))
+        axc.set_xlabel('x (km)')
+        axc.grid()
+    ax[0].set_ylabel('z (m)')
+
+    fig2,ax = plt.subplots(1,1,sharey=True)
+    ax.linfit(qxx,fd,percx=percx,percy=percy)
+    ax.set_xlabel('qxx')
+    ax.set_ylabel('grad fd')
+    ax.grid()
+
+    return fig, fig2
+

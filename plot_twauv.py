@@ -11,7 +11,7 @@ def getvaravg(fh,varstr,sl):
     dt = fh.variables['average_DT'][:]
     dt = dt[:,np.newaxis,np.newaxis,np.newaxis]
     var = (fh.variables[varstr][sl]*dt)
-    var = np.apply_over_axes(np.sum,var,0)/np.sum(dt)
+    var = np.ma.apply_over_axes(np.sum,var,0)/np.sum(dt)
     return var
 
 def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
@@ -47,7 +47,7 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
     slvpy = np.s_[:,zs:ze,ys:ye+1,xs:xe]
 
     uh = getvaravg(fh2,'uh',slu)
-    u = getvaravg(fh2,'u',slu)
+    u = getvaravg(fh2,'u',slu).filled(np.nan)
     h_cu = getvaravg(fh,'h_Cu',slu)
     h_cu = np.ma.masked_array(h_cu,mask=(h_cu<1e-3))
     dycu = fhgeo.variables['dyCu'][slu[2:]]
@@ -93,10 +93,10 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
     wzb = hw/dbl[:,np.newaxis,np.newaxis]
     whash = uzx + vzy + wzb
 
-    terms = [utwa,vtwa,whash]
-    slices = [slu,slvpy,slh]
-    X = [dimu[keepax[1]],dimv[keepax[1]],dimh[keepax[1]]]
-    Y = [dimu[keepax[0]],dimv[keepax[0]],dimh[keepax[0]]]
+    terms = [utwa,vtwa,whash, u, v]
+    slices = [slu,slvpy,slh,slu,slvpy]
+    X = [dimu[keepax[1]],dimv[keepax[1]],dimh[keepax[1]],dimu[keepax[1]],dimv[keepax[1]]]
+    Y = [dimu[keepax[0]],dimv[keepax[0]],dimh[keepax[0]],dimu[keepax[1]],dimv[keepax[1]]]
     termsm = []
     for item in terms:
         try:
@@ -110,10 +110,10 @@ def getuv(geofil,vgeofil,fil,fil2,xstart,xend,
         for i in range(len(terms)):
             z = np.linspace(-3000,0,100)
             em = fh2.variables['e'][slices[i]]
-            if i == 0:
+            if i == 0 or i == 3:
                 em = np.concatenate((em,em[:,:,:,-1:]),axis=3)
                 em = 0.5*(em[:,:,:,:-1]+em[:,:,:,1:])
-            elif i == 1:
+            elif i == 1 or i == 4:
                 em = 0.5*(em[:,:,:-1,:]+em[:,:,1:,:])
             em = np.ma.apply_over_axes(np.mean, em, meanax)
             termsm[i] = getvaratzc(termsm[i].astype(np.float32),
@@ -139,6 +139,8 @@ def plot_uv(geofil,vgeofil,fil,fil2,xstart,xend,
     X,Y,P = getuv(geofil,vgeofil,fil,fil2,xstart,xend,
             ystart,yend,zs,ze,meanax,xyasindices = False)
 
+    P1 = P[3:]
+    P = P[:3]
 
     fig,ax = plt.subplots(len(P),1,sharex=True,sharey=True,
                           figsize=(4,6))
@@ -159,4 +161,23 @@ def plot_uv(geofil,vgeofil,fil,fil2,xstart,xend,
         if i == len(P)-1: 
             xdegtokm(axc,0.5*(ystart+yend))
         axc.set_ylabel('z (m)') 
-    return fig
+
+    fig1,ax = plt.subplots(len(P1),1,sharex=True,sharey=True,
+                          figsize=(4,4))
+    ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
+    lab = [r'$\overline{u}$',r'$\overline{v}$',r'$w^{\#}$']
+    for i in range(len(P1)):
+        P1[i] = np.ma.masked_array(P1[i],mask=np.isnan(P[i]))
+        P1[i] = P1[i].squeeze()
+        cmax = np.nanpercentile(P1[i],[minperc[i],100-minperc[i]])
+        cmax = np.max(np.fabs(cmax))
+        axc = ax.ravel()[i]
+        im = m6plot((X[i],Y[i],P1[i]),axc,vmax=cmax,vmin=-cmax,ptype='imshow',
+                    txt=lab[i], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
+        cb = fig.colorbar(im, ax=axc)
+        cb.formatter.set_powerlimits((0, 0))
+        cb.update_ticks()
+        if i == len(P1)-1: 
+            xdegtokm(axc,0.5*(ystart+yend))
+        axc.set_ylabel('z (m)') 
+    return fig,fig1

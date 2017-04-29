@@ -13,7 +13,7 @@ from getvaratz import *
 import xarray as xr
 
 def plotoceanstats(fil,savfil=None):
-    ds = xr.open_mfdataset(fil)
+    ds = xr.open_mfdataset(fil,decode_times=False)
     ds['Time'] /= 365
 
     fig,ax = plt.subplots(4,1,sharex=True,figsize=(9,9))
