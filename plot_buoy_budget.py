@@ -8,6 +8,70 @@ import time
 import pyximport
 pyximport.install()
 from getvaratzc import getvaratzc5, getvaratzc, getTatzc, getTatzc2
+from pym6 import Domain, Variable
+import importlib
+importlib.reload(Domain)
+importlib.reload(Variable)
+
+def extract_buoy_terms_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,le,
+      fil3=None, z=np.linspace(-3000,0,100),htol=1e-3):
+
+    domain = Domain.Domain(geofil,vgeofil,xstart,xend,ystart,yend,ls=ls,le=le) 
+
+    with mfdset(fil) as fh, mfdset(fil2) as fh2:
+
+        h = Variable.GridVariable('e',domain,'h',fh2).read_array().o1diff(1)
+        h = -h.values
+        h = np.ma.masked_array(h,mask=(h<htol)).filled(np.nan)
+
+#    whash = getwhash(fhgeo,vgeofil,fh,fh2,sl,htol=htol)
+#    whash = getvaratzc(whash.astype(np.float32),
+#                       z.astype(np.float32),
+#                       e.astype(np.float32))
+#    wbz = whash*bz
+
+#    efxd = getvaravg(fh2,'e',slmx)
+#    bfxd = getTatzc2(bi.astype(np.float32),
+#                    z.astype(np.float32),
+#                    efxd.astype(np.float32))
+#    bfxd = np.concatenate((bfxd,bfxd[:,:,:,-1:]),axis=3)
+#    bx = np.diff(bfxd,axis=3)/dxcu
+#    u = getutwa(fhgeo,fh,fh2,slmx,htol=htol)
+#    e_cu = np.concatenate((efxd,efxd[:,:,:,-1:]),axis=3)
+#    e_cu = 0.5*(e_cu[:,:,:,:-1]+e_cu[:,:,:,1:])
+#    u = getvaratzc(u.astype(np.float32),
+#                   z.astype(np.float32),
+#                   e_cu.astype(np.float32))
+#    ubx = u*bx
+#    ubx = 0.5*(ubx[:,:,:,:-1]+ubx[:,:,:,1:])
+#
+#    efyd = getvaravg(fh2,'e',slmpy)
+#    bfyd = getTatzc2(bi.astype(np.float32),
+#                    z.astype(np.float32),
+#                    efyd.astype(np.float32))
+#    by = np.diff(bfyd,axis=2)/dycv
+#    e_cv = 0.5*(efyd[:,:,:-1,:]+efyd[:,:,1:,:])
+#    v = getvtwa(fhgeo,fh,fh2,slmy,htol=htol)
+#    v = getvaratzc(v.astype(np.float32),
+#                   z.astype(np.float32),
+#                   e_cv.astype(np.float32))
+#    vby = v*by
+#    vby = 0.5*(vby[:,:,:-1,:]+vby[:,:,1:,:])
+#
+#    hwb = getvaravg(fh2,'wd',sl)
+#    hwb = -np.diff(hwb,axis=1)
+#    hwm = hwb*dbl[:,np.newaxis,np.newaxis]
+#    wtwa = hwm/h
+#    wtwa = getvaratzc(wtwa.astype(np.float32),
+#                   z.astype(np.float32),
+#                   e.astype(np.float32))
+#
+#    terms = np.ma.concatenate((ubx[:,:,:,:,np.newaxis],
+#                            vby[:,:,:,:,np.newaxis],
+#                            wbz[:,:,:,:,np.newaxis],
+#                           -wtwa[:,:,:,:,np.newaxis]),axis=4)
+#    return dimh, terms
+
 
 def getvaravg(fh,varstr,sl):
     dt = fh.variables['average_DT'][:]
@@ -88,7 +152,6 @@ def extract_buoy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
     fh = mfdset(fil)
     fh2 = mfdset(fil2)
     dz = np.diff(z)[0]
-
 
     (xs,xe), (ys,ye), dimh = rdp1.getlatlonindx(fh,wlon=xstart,elon=xend,
                                             slat=ystart,nlat=yend, 
