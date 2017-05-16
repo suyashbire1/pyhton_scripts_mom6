@@ -12,6 +12,7 @@ from pym6 import Domain, Variable
 import importlib
 importlib.reload(Domain)
 importlib.reload(Variable)
+gv = Variable.GridVariable
 
 def extract_buoy_terms_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,le,
       fil3=None, z=np.linspace(-3000,0,100),htol=1e-3):
@@ -20,58 +21,45 @@ def extract_buoy_terms_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,l
 
     with mfdset(fil) as fh, mfdset(fil2) as fh2:
 
-        h = Variable.GridVariable('e',domain,'h',fh2).read_array().o1diff(1)
-        h = -h.values
-        h = np.ma.masked_array(h,mask=(h<htol)).filled(np.nan)
+        h = -gv('e',domain,'hi',fh2,units='m').read_array().o1diff(1).values
+        h[h<htol] = np.nan
+        sigma = gv('e',domain,'hi',fh2).read_array().ddx(1).values
+        sigma1 = np.nanmean(sigma,axis=(0,2),keepdims=True)
+        
+        ex = gv('e',domain,'hi',fh2).xsm().xep().read_array(extend_kwargs={'method':'mirror'}).ddx(3).move_to('ul')
+        u = gv('uh',domain,'ul',fh2,fh,plot_loc='hl',divisor='h_Cu').xsm().read_array(divide_by_dy=True)
+        uex = u*ex
+        uex = uex.move_to('hl')#.values
+        ubx = -uex*(1/sigma)
 
-#    whash = getwhash(fhgeo,vgeofil,fh,fh2,sl,htol=htol)
-#    whash = getvaratzc(whash.astype(np.float32),
-#                       z.astype(np.float32),
-#                       e.astype(np.float32))
-#    wbz = whash*bz
+        ey = gv('e',domain,'hi',fh2).ysm().yep().read_array().ddx(2).move_to('vl')
+        v = gv('vh',domain,'vl',fh2,fh,plot_loc='hl',divisor='h_Cv').ysm().read_array(divide_by_dx=True)
+        vey = v*ey
+        vey = vey.move_to('hl')#.values
+        vby = -vey*(1/sigma)
 
-#    efxd = getvaravg(fh2,'e',slmx)
-#    bfxd = getTatzc2(bi.astype(np.float32),
-#                    z.astype(np.float32),
-#                    efxd.astype(np.float32))
-#    bfxd = np.concatenate((bfxd,bfxd[:,:,:,-1:]),axis=3)
-#    bx = np.diff(bfxd,axis=3)/dxcu
-#    u = getutwa(fhgeo,fh,fh2,slmx,htol=htol)
-#    e_cu = np.concatenate((efxd,efxd[:,:,:,-1:]),axis=3)
-#    e_cu = 0.5*(e_cu[:,:,:,:-1]+e_cu[:,:,:,1:])
-#    u = getvaratzc(u.astype(np.float32),
-#                   z.astype(np.float32),
-#                   e_cu.astype(np.float32))
-#    ubx = u*bx
-#    ubx = 0.5*(ubx[:,:,:,:-1]+ubx[:,:,:,1:])
-#
-#    efyd = getvaravg(fh2,'e',slmpy)
-#    bfyd = getTatzc2(bi.astype(np.float32),
-#                    z.astype(np.float32),
-#                    efyd.astype(np.float32))
-#    by = np.diff(bfyd,axis=2)/dycv
-#    e_cv = 0.5*(efyd[:,:,:-1,:]+efyd[:,:,1:,:])
-#    v = getvtwa(fhgeo,fh,fh2,slmy,htol=htol)
-#    v = getvaratzc(v.astype(np.float32),
-#                   z.astype(np.float32),
-#                   e_cv.astype(np.float32))
-#    vby = v*by
-#    vby = 0.5*(vby[:,:,:-1,:]+vby[:,:,1:,:])
-#
-#    hwb = getvaravg(fh2,'wd',sl)
-#    hwb = -np.diff(hwb,axis=1)
-#    hwm = hwb*dbl[:,np.newaxis,np.newaxis]
-#    wtwa = hwm/h
-#    wtwa = getvaratzc(wtwa.astype(np.float32),
-#                   z.astype(np.float32),
-#                   e.astype(np.float32))
-#
-#    terms = np.ma.concatenate((ubx[:,:,:,:,np.newaxis],
-#                            vby[:,:,:,:,np.newaxis],
-#                            wbz[:,:,:,:,np.newaxis],
-#                           -wtwa[:,:,:,:,np.newaxis]),axis=4)
-#    return dimh, terms
+        wd = gv('wd',domain,'hi',fh2).read_array().move_to('hl')#.values
+        whash = wd + uex + vey
+        wbz = whash*(1/sigma)
 
+        hwb = -gv('wd',domain,'hi',fh2).read_array().o1diff(1)*domain.db
+        wtwa = hwb*(1/h)
+
+        varlist =  [-ubx,-vby,-wbz,-wtwa]
+        z = np.linspace(-2000,0)
+        e = gv('e',domain,'hi',fh2).read_array()
+
+        fig,ax = plt.subplots(2,2,sharex=True,sharey=True)
+        ax = ax.ravel()
+        for i,var in enumerate(varlist):
+            var.units = r'$ms^{-3}$'
+            var.plot('nanmean',(0,2),ax=ax[i],
+                    plot_kwargs=dict(cmap='RdBu_r'),
+                    perc=99,cbar=True,zcoord=True,z=z,e=e,isop_mean=False)
+#            var.plot('nanmean',(0,1),ax=ax[i],
+#                    plot_kwargs=dict(cmap='RdBu_r'),
+#                    perc=95,cbar=True)
+        return fig
 
 def getvaravg(fh,varstr,sl):
     dt = fh.variables['average_DT'][:]
