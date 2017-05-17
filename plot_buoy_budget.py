@@ -8,10 +8,11 @@ import time
 import pyximport
 pyximport.install()
 from getvaratzc import getvaratzc5, getvaratzc, getTatzc, getTatzc2
-from pym6 import Domain, Variable
+from pym6 import Domain, Variable, Plotter
 import importlib
 importlib.reload(Domain)
 importlib.reload(Variable)
+importlib.reload(Plotter)
 gv = Variable.GridVariable
 
 def extract_buoy_terms_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,le,
@@ -45,20 +46,16 @@ def extract_buoy_terms_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,l
         hwb = -gv('wd',domain,'hi',fh2).read_array().o1diff(1)*domain.db
         wtwa = hwb*(1/h)
 
-        varlist =  [-ubx,-vby,-wbz,-wtwa]
+        budgetlist =  [-ubx,-vby,-wbz,-wtwa]
+        for var in budgetlist:
+            var.units = r'$ms^{-3}$'
         z = np.linspace(-2000,0)
         e = gv('e',domain,'hi',fh2).read_array()
+        plot_kwargs = dict(cmap='RdBu_r')
+        plotter_kwargs = dict(zcoord=True,z=z,e=e,isop_mean=True)
 
-        fig,ax = plt.subplots(2,2,sharex=True,sharey=True)
-        ax = ax.ravel()
-        for i,var in enumerate(varlist):
-            var.units = r'$ms^{-3}$'
-            var.plot('nanmean',(0,2),ax=ax[i],
-                    plot_kwargs=dict(cmap='RdBu_r'),
-                    perc=99,cbar=True,zcoord=True,z=z,e=e,isop_mean=False)
-#            var.plot('nanmean',(0,1),ax=ax[i],
-#                    plot_kwargs=dict(cmap='RdBu_r'),
-#                    perc=95,cbar=True)
+        fig = Plotter.budget_plot(budgetlist,(0,2),plot_kwargs=plot_kwargs,
+                plotter_kwargs=plotter_kwargs,perc=90,individual_cbars=False)
         return fig
 
 def getvaravg(fh,varstr,sl):
