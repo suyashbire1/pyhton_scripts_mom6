@@ -87,6 +87,6 @@ def xdegtokm(ax,y):
     R = 6400
     xtinkm = R*np.cos(y*np.pi/180)*xt*np.pi/180
     ax.set_xticklabels(['{:.0f}'.format(i) for i in xtinkm])
-    ax.set_xlabel('x from EB (km)')
+    ax.set_xlabel('x from EB (km)',fontsize=11)
     return
 

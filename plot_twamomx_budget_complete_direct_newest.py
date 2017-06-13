@@ -238,7 +238,7 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
     cmax = np.nanpercentile(P,[cmaxpercfactor,100-cmaxpercfactor])
     cmax = np.max(np.fabs(cmax))
     fig,ax = plt.subplots(np.int8(np.ceil(len(plotterms)/2)),2,
-                          sharex=True,sharey=True,figsize=(12, 2.5))
+                          sharex=True,sharey=True,figsize=(10,3))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
     lab = [ r'$-\hat{u}\hat{u}_{\tilde{x}}$',
             r'$-\hat{v}\hat{u}_{\tilde{y}}$',
@@ -256,7 +256,10 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
         im = m6plot((X,Y,P[:,:,p]),axc,vmax=cmax,vmin=-cmax,ptype='imshow',
                 txt=lab[p], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
         if fil3:
-            cs = axc.contour(X,Y,swash,np.array([swashperc]), colors='k')
+            cs = axc.contour(X,Y,swash,np.array([swashperc]),
+                    colors='grey',linewidths=4)
+        cs = axc.contour(X,Y,P[:,:,p],levels=[-2e-5,-1e-5,1e-5,2e-5],colors='k')
+        cs.clabel(inline=True,fmt="%.0e")
         
         if i % 2 == 0:
             axc.set_ylabel('z (m)')

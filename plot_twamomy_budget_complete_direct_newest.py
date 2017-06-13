@@ -240,7 +240,7 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fi
     cmax = np.nanpercentile(P,[cmaxpercfactor,100-cmaxpercfactor])
     cmax = np.max(np.fabs(cmax))
     fig,ax = plt.subplots(np.int8(np.ceil(len(plotterms)/2)),2,
-                          sharex=True,sharey=True,figsize=(12, 7))
+                          sharex=True,sharey=True,figsize=(10,5.5))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
     lab = [ r'$-\hat{u}\hat{v}_{\tilde{x}}$', 
             r'$-\hat{v}\hat{v}_{\tilde{y}}$', 
@@ -251,7 +251,7 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fi
             #r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}v^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{y}}$""",
             r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}v^{\prime \prime}})_{\tilde{y}}$""",
             #r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}\varpi ^{\prime \prime}} + \overline{\zeta^\prime m_{\tilde{y}}^\prime})_{\tilde{b}}$""",
-            r"""$-\frac{1}{\overline{h}}(\overline{\zeta^\prime m_{\tilde{y}}^\prime})_{\tilde{b}}$""",
+            r"""$-\frac{1}{\overline{\zeta_{\tilde{b}}}}(\overline{\zeta^\prime m_{\tilde{y}}^\prime})_{\tilde{b}}$""",
             r'$\widehat{Y^H}$', 
             r'$\widehat{Y^V}$']
 
@@ -261,7 +261,10 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fi
         im = m6plot((X,Y,P[:,:,p]),axc,vmax=cmax,vmin=-cmax,ptype='imshow',
                 txt=lab[p], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
         if fil3:
-            cs = axc.contour(X,Y,swash,np.array([swashperc]), colors='k')
+            cs = axc.contour(X,Y,swash,np.array([swashperc]),
+                    colors='grey',linewidths=4)
+        cs = axc.contour(X,Y,P[:,:,p],levels=[-2e-6,-1e-6,1e-6,2e-6],colors='k')
+        cs.clabel(inline=True,fmt="%.0e")
         
         if i % 2 == 0:
             axc.set_ylabel('z (m)')
@@ -306,7 +309,10 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fi
         im = m6plot((X,Y,Pep[:,:,i]),axc,vmax=cmax,vmin=-cmax,ptype='imshow',
                 txt=lab[i],cmap='RdBu_r', ylim=(-2500,0),cbar=False)
         if fil3:
-            cs = axc.contour(X,Y,swash,np.array([swashperc]), colors='k')
+            cs = axc.contour(X,Y,swash,np.array([swashperc]),
+                    colors='grey',linewidths=4)
+        cs = axc.contour(X,Y,P[:,:,p],levels=[-2e-6,-1e-6,1e-6,2e-6],colors='k')
+        cs.clabel(inline=True,fmt="%.0e")
         if i % 2 == 0:
             axc.set_ylabel('z (m)')
 

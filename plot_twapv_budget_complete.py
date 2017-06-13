@@ -305,7 +305,7 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
             #r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{v^{\prime \prime}v^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{y}})_{\tilde{x}}$""",
             r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{v^{\prime \prime}v^{\prime \prime}})_{\tilde{y}})_{\tilde{x}}$""",
             #r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\bar{h}\widehat{v^{\prime \prime}\varpi^{\prime \prime}} + \overline{\zeta^{\prime}m_{\tilde{y}}^{\prime}})_{\tilde{b}})_{\tilde{x}}$""",
-            r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{h}}(\overline{\zeta^{\prime}m_{\tilde{y}}^{\prime}})_{\tilde{b}})_{\tilde{x}}$""",
+            r"""$-\frac{1}{\bar{h}}(\frac{1}{\bar{\zeta_{\tilde{b}}}}(\overline{\zeta^{\prime}m_{\tilde{y}}^{\prime}})_{\tilde{b}})_{\tilde{x}}$""",
             r'$\frac{1}{\bar{h}}(\widehat{Y^H})_{\tilde{x}}$', 
             r'$\frac{1}{\bar{h}}(\widehat{Y^V})_{\tilde{x}}$',
             r'$B_{\tilde{x} \tilde{y}} - B_{\tilde{y} \tilde{x}}$']
@@ -316,7 +316,8 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
         im = m6plot((X,Y,Pnew[:,:,p]),axc,vmax=cmax,vmin=-cmax,ptype='imshow',
                 ylim=(-1200,0), txt=lab[p], 
                 cmap='RdBu_r', cbar=False)
-        im2 = axc.contour(X,Y,pvhash,np.logspace(-6,-5.5,5),colors='k')
+        im2 = axc.contour(X,Y,pvhash,np.logspace(-6,-5.5,5),colors='grey',linewidths=2)
+        im2.clabel(inline=True,fmt="%.1e")
         if fil3:
             cs = axc.contour(X,Y,swash,np.array([swashperc]), colors='k')
         if i % 2 == 0:
@@ -336,6 +337,31 @@ def plot_twapv(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
     im = m6plot((X,Y,np.sum(Pnew,axis=2)),ptype='imshow',vmax=cmax,vmin=-cmax,cmap='RdBu_r',ylim=(-2500,0))
     if savfil:
         plt.savefig(savfil+'Pnewres.eps', dpi=300, facecolor='w', edgecolor='w', 
+                    format='eps', transparent=False, bbox_inches='tight')
+    else:
+        plt.show()
+
+    fig,ax = plt.subplots(1,2,sharex=True,sharey=True,figsize=(10, 3))
+    im = m6plot((X,Y,np.nansum(Pnew[:,:,:2],axis=2)),
+            ax[0],vmax=cmax,vmin=-cmax,ptype='imshow',
+            ylim=(-1200,0), txt=lab[0]+lab[1], 
+            cmap='RdBu_r', cbar=False)
+    im = m6plot((X,Y,np.nansum(Pnew[:,:,12:13],axis=2)),
+            ax[1],vmax=cmax,vmin=-cmax,ptype='imshow',
+            ylim=(-1200,0), txt=lab[12], 
+            cmap='RdBu_r', cbar=False)
+    ax[0].set_ylabel('z (m)')
+    for axc in ax:
+        xdegtokm(axc,0.5*(ystart+yend))
+        im2 = axc.contour(X,Y,pvhash,np.logspace(-6,-5.5,5),colors='grey',linewidths=2)
+        im2.clabel(inline=True,fmt="%.1e")
+        axc.set_ylim(-1200,0)
+    fig.tight_layout()
+    cb = fig.colorbar(im, ax=ax.ravel().tolist())
+    cb.formatter.set_powerlimits((0, 0))
+    cb.update_ticks() 
+    if savfil:
+        plt.savefig(savfil+'Pnewnew.eps', dpi=300, facecolor='w', edgecolor='w', 
                     format='eps', transparent=False, bbox_inches='tight')
     else:
         plt.show()

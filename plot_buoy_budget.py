@@ -16,7 +16,7 @@ importlib.reload(Plotter)
 gv = Variable.GridVariable
 
 def extract_buoy_terms_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,le,
-      fil3=None, z=np.linspace(-3000,0,100),htol=1e-3):
+      fil3=None, z=np.linspace(-3000,0,100),htol=1e-3,whichterms=None):
 
     domain = Domain.Domain(geofil,vgeofil,xstart,xend,ystart,yend,ls=ls,le=le) 
 
@@ -25,7 +25,6 @@ def extract_buoy_terms_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,l
         h = -gv('e',domain,'hi',fh2,units='m').read_array().o1diff(1).values
         h[h<htol] = np.nan
         sigma = gv('e',domain,'hi',fh2).read_array().ddx(1).values
-        sigma1 = np.nanmean(sigma,axis=(0,2),keepdims=True)
         
         ex = gv('e',domain,'hi',fh2).xsm().xep().read_array(extend_kwargs={'method':'mirror'}).ddx(3).move_to('ul')
         u = gv('uh',domain,'ul',fh2,fh,plot_loc='hl',divisor='h_Cu').xsm().read_array(divide_by_dy=True)
@@ -47,8 +46,13 @@ def extract_buoy_terms_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,l
         wtwa = hwb*(1/h)
 
         budgetlist =  [-ubx,-vby,-wbz,-wtwa]
-        for var in budgetlist:
+        name = [r'$-\hat{u}b^{\#}_x$',r'$-\hat{v}b^{\#}_y$',r'$-w^{\#}b^{\#}_z$',r'$\hat{\varpi}$']
+        if whichterms:
+            budgetlist = budgetlist[whichterms]
+            name = name[whichterms]
+        for i,var in enumerate(budgetlist):
             var.units = r'$ms^{-3}$'
+            var.name = name[i]
         z = np.linspace(-2000,0)
         e = gv('e',domain,'hi',fh2).read_array()
         plot_kwargs = dict(cmap='RdBu_r')

@@ -5,6 +5,37 @@ from mom_plot1 import m6plot, xdegtokm
 import numpy as np
 from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
+from pym6 import Domain, Variable, Plotter
+import importlib
+importlib.reload(Domain)
+importlib.reload(Variable)
+importlib.reload(Plotter)
+gv = Variable.GridVariable
+
+def extract_cb_terms_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,le):
+
+    domain = Domain.Domain(geofil,vgeofil,xstart,xend,ystart,yend,ls=ls,le=le) 
+
+    with mfdset(fil) as fh, mfdset(fil2) as fh2:
+
+        vhy = gv('vh',domain,'vl',fh2,fh,plot_loc='hl').ysm().read_array(filled=0).ddx(2)
+        uhx = gv('uh',domain,'ul',fh2,fh,plot_loc='hl').xsm().read_array(filled=0).ddx(3)
+        wd = gv('wd',domain,'hi',fh2).read_array().o1diff(1)
+    
+    budgetlist = [-uhx*(1/domain.dyT[uhx._slice[2:]]),-vhy*(1/domain.dxT[vhy._slice[2:]]),-wd]
+    return budgetlist
+
+def plot_cb_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,le,meanax,perc=99):
+    budgetlist = extract_cb_terms_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,le)
+    z = np.linspace(-3000,0)
+    with mfdset(fil) as fh, mfdset(fil2) as fh2:
+        e = gv('e',budgetlist[0].dom,'hi',fh2).read_array()
+    plot_kwargs = dict(cmap='RdBu_r')
+    plotter_kwargs = dict(zcoord=True,z=z,e=e,isop_mean=True)
+
+    fig = Plotter.budget_plot(budgetlist,meanax,plot_kwargs=plot_kwargs,
+            plotter_kwargs=plotter_kwargs,perc=perc,individual_cbars=False)
+    return fig
 
 def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax):
 
@@ -86,23 +117,24 @@ def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax):
 
 
 def plot_cb(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
-        savfil=None):
+        savfil=None,perc=99):
     X,Y,P = extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax)
-    cmax = np.nanmax(np.absolute(P))
-    fig,axc = plt.subplots(1,2,sharex=True,sharey=True,figsize=(8, 3))
+    cmax = np.nanpercentile(np.absolute(P),perc)
+    fig,axc = plt.subplots(1,3,sharex=True,sharey=True,figsize=(10, 3))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
     lab = [ r'$(\bar{h}\hat{u})_{\tilde{x}}$', 
             r'$(\bar{h}\hat{v})_{\tilde{y}}$', 
             r'$(\bar{h}\hat{\varpi})_{\tilde{b}}$'] 
 
-    for i in range(P.shape[-1]-1):
-        ax = axc[i]
+    for i in range(P.shape[-1]):
+        ax = axc.ravel()[i]
         im = m6plot((X,Y,P[:,:,i]),ax,vmax=cmax,vmin=-cmax,#ptype='imshow',
                 txt=lab[i], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
 
         xdegtokm(ax,0.5*(ystart+yend))
         if i == 0:
             ax.set_ylabel('z (m)')
+        ax.set_ylim(-1500,0)
 
     fig.tight_layout()
     cb = fig.colorbar(im, ax=axc.ravel().tolist())
