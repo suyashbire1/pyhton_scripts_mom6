@@ -227,13 +227,13 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         P = npzfile['P']
         Pep = npzfile['Pep']
         
-    return (X,Y,P,Pep,swash)
+    return (X,Y,P,Pep,swash,em.squeeze())
 
 def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fil3=None,
         cmaxpercfactor = 1,cmaxpercfactorforep=1,
         plotterms=[3,4,5,6,7,8],swashperc=1,
         savfil=None,savfilep=None,alreadysaved=False):
-    X,Y,P,Pep,swash = extract_twamomy_terms(geofil,vgeofil,fil,fil2,
+    X,Y,P,Pep,swash,em = extract_twamomy_terms(geofil,vgeofil,fil,fil2,
                                         xstart,xend,ystart,yend,zs,ze,
                                         meanax, alreadysaved=alreadysaved, fil3=fil3)
     P = np.ma.masked_array(P,mask=np.isnan(P)).squeeze()
@@ -259,13 +259,15 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fi
     for i,p in enumerate(plotterms):
         axc = ax.ravel()[i]
         im = m6plot((X,Y,P[:,:,p]),axc,vmax=cmax,vmin=-cmax,ptype='imshow',
-                txt=lab[p], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
+                txt=lab[p], ylim=(-2000,0),cmap='RdBu_r',cbar=False)
         if fil3:
             cs = axc.contour(X,Y,swash,np.array([swashperc]),
                     colors='grey',linewidths=4)
-        cs = axc.contour(X,Y,P[:,:,p],levels=[-2e-6,-1e-6,1e-6,2e-6],colors='k')
+        cs = axc.contour(X,Y,P[:,:,p],levels=[-2e-6,-1e-6,1e-6,2e-6],
+                colors='k',linestyles='dashed')
         cs.clabel(inline=True,fmt="%.0e")
-        
+        cs1 = axc.plot(X,em[::4,:].T,'k')
+
         if i % 2 == 0:
             axc.set_ylabel('z (m)')
         if i > np.size(ax)-3:

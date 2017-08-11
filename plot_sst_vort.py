@@ -25,9 +25,9 @@ def plot_sst_vort(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,le,
         rho = gv('e',domain,'hi',fh2).read_array(tmean=False).toz(z,rho=True)
         T = (-rho + 1031)*(1/0.2)
         T.name =''
-        fig,ax = plt.subplots(1,2,sharex=True,sharey=True)
+        fig,ax = plt.subplots(1,3,sharex=True,sharey=True)
         T.plot('nanmean',(0,1),contour=False,cbar=True,plot_kwargs=dict(cmap='RdYlBu_r',vmax=20,vmin=10),ax=ax[0])
-        e = gv('e',domain,'hi',fh2,plot_loc='qi').ysm().xsm().read_array(tmean=False,
+        e = gv('e',domain,'hi',fh2,plot_loc='qi').xsm().ysm().read_array(tmean=False,
                 extend_kwargs=dict(method='mirror')).move_to('ui').move_to('qi')
         uy = gv('u',domain,'ul',fh2,plot_loc='ql').yep().read_array(tmean=False,
                 extend_kwargs=dict(method='vorticity')).ddx(2)
@@ -37,6 +37,26 @@ def plot_sst_vort(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,le,
         vort.name = ''
         vort.plot('nanmean',(0,1),perc=98,contour=False,cbar=True,plot_kwargs=dict(cmap='RdBu_r'),ax=ax[1])
         ax[1].set_ylabel('')
+
+        vortz = vort.toz([-1],e=e)
+        vortz.name = ''
+#        vortz.plot('take',1,perc=98,contour=False,cbar=True,plot_kwargs=dict(cmap='RdBu_r'),ax=ax[2])
+        vmax = np.nanpercentile(np.fabs(vortz.values),98)
+        print(vortz.dom.lonq[vortz._plot_slice[3,0]:vortz._plot_slice[3,1]].shape,
+                vortz.dom.latq[vortz._plot_slice[2,0]:vortz._plot_slice[2,1]].shape,
+                vortz.values[0,0,:,:].shape)
+        xx,yy = np.meshgrid(vortz.dom.lonq[vortz._plot_slice[3,0]:vortz._plot_slice[3,1]].shape,
+                vortz.dom.latq[vortz._plot_slice[2,0]:vortz._plot_slice[2,1]].shape)
+        im = ax[2].pcolormesh(xx,yy,
+                vortz.values[0,0,:,:],cmap='RdBu_r',vmin=-vmax,vmax=vmax)
+#        print(e.values.shape)
+#        im = ax[2].pcolormesh(e.dom.lonq[e._plot_slice[3,0]:e._plot_slice[3,1]],
+#                e.dom.latq[e._plot_slice[2,0]:e._plot_slice[2,1]],
+#                e.values[0,0,:,:],cmap='RdBu_r')
+        cbar = fig.colorbar(im,ax=ax[2])
+        cbar.formatter.set_powerlimits((-2,2))
+        cbar.update_ticks()
+        ax[2].set_ylabel('')
 
     domain = Domain.Domain(geofil,vgeofil,
             xstart,xend,ystart,yend,ls=0,le=1) 

@@ -73,6 +73,7 @@ def m6plot(data,ax=None,**plotkwargs):
     ax.set_title(title)
     tx = ax.text(0.05,0.2,txt,transform=ax.transAxes)
     tx.set_fontsize(15)
+    tx.set_bbox(dict(facecolor='white', alpha=1,edgecolor='white'))
     if inverty:
         ax.invert_yaxis()
 
@@ -84,9 +85,11 @@ def m6plot(data,ax=None,**plotkwargs):
 
 def xdegtokm(ax,y):
     xt = ax.get_xticks()
+    print(xt)
     R = 6400
     xtinkm = R*np.cos(y*np.pi/180)*xt*np.pi/180
+    print(xtinkm)
     ax.set_xticklabels(['{:.0f}'.format(i) for i in xtinkm])
-    ax.set_xlabel('x from EB (km)',fontsize=11)
+    ax.set_xlabel('x from EB (km)')
     return
 

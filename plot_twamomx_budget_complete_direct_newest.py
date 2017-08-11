@@ -1,7 +1,11 @@
 import sys
 import readParams_moreoptions as rdp1
 import matplotlib.pyplot as plt
-from mom_plot1 import m6plot, xdegtokm
+import mom_plot1
+import importlib
+importlib.reload(mom_plot1)
+m6plot = mom_plot1.m6plot
+xdegtokm = mom_plot1.xdegtokm
 import numpy as np
 from netCDF4 import MFDataset as mfdset, Dataset as dset
 import time
@@ -226,12 +230,12 @@ def extract_twamomx_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         P = npzfile['P']
         Pep = npzfile['Pep']
         
-    return (X,Y,P,Pep,swash)
+    return (X,Y,P,Pep,swash,em.squeeze())
 
 def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
         fil3=None,cmaxpercfactor = 1,cmaxpercfactorforep=1, plotterms=[3,4,7],
         swashperc=1,savfil=None,savfilep=None,alreadysaved=False):
-    X,Y,P,Pep,swash = extract_twamomx_terms(geofil,vgeofil,fil,fil2,
+    X,Y,P,Pep,swash,em = extract_twamomx_terms(geofil,vgeofil,fil,fil2,
                                         xstart,xend,ystart,yend,zs,ze,
                                         meanax, alreadysaved=alreadysaved,fil3=fil3)
     P = np.ma.masked_array(P,mask=np.isnan(P)).squeeze()
@@ -254,12 +258,14 @@ def plot_twamomx(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
     for i,p in enumerate(plotterms):
         axc = ax.ravel()[i]
         im = m6plot((X,Y,P[:,:,p]),axc,vmax=cmax,vmin=-cmax,ptype='imshow',
-                txt=lab[p], ylim=(-2500,0),cmap='RdBu_r',cbar=False)
+                txt=lab[p], ylim=(-2000,0),cmap='RdBu_r',cbar=False)
         if fil3:
             cs = axc.contour(X,Y,swash,np.array([swashperc]),
                     colors='grey',linewidths=4)
-        cs = axc.contour(X,Y,P[:,:,p],levels=[-2e-5,-1e-5,1e-5,2e-5],colors='k')
+        cs = axc.contour(X,Y,P[:,:,p],levels=[-2e-5,-1e-5,1e-5,2e-5],
+                colors='k',linestyles='dashed')
         cs.clabel(inline=True,fmt="%.0e")
+        cs1 = axc.plot(X,em[::4,:].T,'k')
         
         if i % 2 == 0:
             axc.set_ylabel('z (m)')
