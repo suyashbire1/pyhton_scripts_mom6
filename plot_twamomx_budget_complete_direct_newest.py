@@ -137,13 +137,12 @@ def extract_twamomx_terms_pym6(initializer):
 
 def plot_twamomx_pym6(initializer,perc=99):
     budgetlist = extract_twamomx_terms_pym6(initializer)
-    z = np.linspace(-3000,0)
     with mfdset(initializer.fil) as fh, mfdset(initializer.fil2) as fh2:
         e = (gv('e',budgetlist[0].dom,'hi',fh2,fh,plot_loc='ul')
                .xep().read_array(extend_kwargs={'method':'mirror'})
              .move_to('ui'))
     plot_kwargs = dict(cmap='RdBu_r')
-    plotter_kwargs = dict(zcoord=True,z=z,e=e,isop_mean=True)
+    plotter_kwargs = dict(zcoord=True,z=initializer.z,e=e,isop_mean=True)
 
     fig = Plotter.budget_plot(budgetlist,initializer.meanax,
                               plot_kwargs=plot_kwargs,

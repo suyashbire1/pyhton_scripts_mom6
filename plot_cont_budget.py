@@ -12,29 +12,35 @@ importlib.reload(Variable)
 importlib.reload(Plotter)
 gv = Variable.GridVariable
 
-def extract_cb_terms_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,le):
+def extract_cb_terms_pym6(initializer):
 
-    domain = Domain.Domain(geofil,vgeofil,xstart,xend,ystart,yend,ls=ls,le=le)
+    domain = Domain.Domain(initializer)
 
-    with mfdset(fil) as fh, mfdset(fil2) as fh2:
+    with mfdset(initializer.fil) as fh, mfdset(initializer.fil2) as fh2:
 
         vhy = gv('vh',domain,'vl',fh2,fh,plot_loc='hl').ysm().read_array(filled=0).ddx(2,div_by_area=True)
         uhx = gv('uh',domain,'ul',fh2,fh,plot_loc='hl').xsm().read_array(filled=0).ddx(3,div_by_area=True)
         wd = gv('wd',domain,'hi',fh2).read_array().o1diff(1)
 #    budgetlist = [-uhx*(1/domain.dyT[uhx._slice[2:]]),-vhy*(1/domain.dxT[vhy._slice[2:]]),-wd]
     budgetlist = [-uhx,-vhy,-wd]
+    lab = [ r'$(\bar{h}\hat{u})_{\tilde{x}}$',
+            r'$(\bar{h}\hat{v})_{\tilde{y}}$',
+            r'$(\bar{h}\hat{\varpi})_{\tilde{b}}$']
+    for i,var in enumerate(budgetlist):
+        var.name = lab[i]
     return budgetlist
 
-def plot_cb_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,le,meanax,perc=99):
-    budgetlist = extract_cb_terms_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,le)
-    z = np.linspace(-3000,0)
-    with mfdset(fil) as fh, mfdset(fil2) as fh2:
+def plot_cb_pym6(initializer,perc=99):
+    budgetlist = extract_cb_terms_pym6(initializer)
+    with mfdset(initializer.fil) as fh, mfdset(initializer.fil2) as fh2:
         e = gv('e',budgetlist[0].dom,'hi',fh2).read_array()
     plot_kwargs = dict(cmap='RdBu_r')
-    plotter_kwargs = dict(zcoord=True,z=z,e=e,isop_mean=True)
+    plotter_kwargs = dict(zcoord=True,z=initializer.z,e=e,isop_mean=True)
 
-    fig = Plotter.budget_plot(budgetlist,meanax,plot_kwargs=plot_kwargs,
-            plotter_kwargs=plotter_kwargs,perc=perc,individual_cbars=False)
+    fig = Plotter.budget_plot(budgetlist,initializer.meanax,
+                              plot_kwargs=plot_kwargs,
+                              plotter_kwargs=plotter_kwargs,
+                              perc=perc,individual_cbars=False)
     return fig
 
 def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax):
