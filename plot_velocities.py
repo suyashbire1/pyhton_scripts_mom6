@@ -23,17 +23,17 @@ def extract_velocities(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,ls,l
        z=np.linspace(-2000,0,100),htol=1e-3,whichterms=None):
 
     domain = Domain.Domain(geofil,vgeofil,
-        xstart,xend,ystart,yend,ls=ls,le=le,ts=0,te=None) 
+        xstart,xend,ystart,yend,ls=ls,le=le,ts=0,te=None)
 
     fig,ax = plt.subplots(3,3,sharex=True,sharey=True,figsize=(8,8))
     ax = ax.ravel()
 
-    with mfdset(fil) as fh, mfdset(fil2) as fh2: 
+    with mfdset(fil) as fh, mfdset(fil2) as fh2:
 
         h = -gv('e',domain,'hi',fh2,units='m').read_array().o1diff(1).values
         h[h<htol] = np.nan
         sigma = gv('e',domain,'hi',fh2).read_array().ddx(1).values
-        
+
         e = gv('e',domain,'hi',fh2).xsm().xep().read_array(
                 extend_kwargs={'method':'mirror'}).move_to('ul')
         ur = gv('uh',domain,'ul',fh2,fh,plot_loc='hl',divisor='h_Cu',
@@ -142,7 +142,7 @@ def extract_velocities(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,ls,l
 #    with mfdset(fil3) as fh3:
 #
 #        domain = Domain.Domain(geofil,vgeofil,
-#            xstart,xend,ystart,yend,ls=ls,le=le,ts=0,te=None) 
+#            xstart,xend,ystart,yend,ls=ls,le=le,ts=0,te=None)
 #
 #        e = gv('e',domain,'hi',fh3,plot_loc='hl').xsm().xep().read_array(
 #                extend_kwargs={'method':'mirror'},tmean=False).move_to('ui')
@@ -157,11 +157,11 @@ def extract_velocities(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,ls,l
 #        vy = v.ddx(2)
 #
 #        wz = np.zeros_like(ux.values)
-#        wz -= ux.values*ux.dz 
+#        wz -= ux.values*ux.dz
 #        wz -= vy.values*vy.dz
 #        #w = np.zeros_like(wz) + np.cumsum(np.nan_to_num(wz),axis=1)
 #        w = np.cumsum(wz,axis=1)
-#        
+#
 #        x = ux.dom.lonh[ux.plot_slice[3,0]:ux.plot_slice[3,1]]
 #        dx = np.diff(x)[0]
 #        extent = [x[0]-dx/2,x[-1]+dx/2,z[0]-ux.dz/2,z[-1]+ux.dz/2]
@@ -196,5 +196,3 @@ def extract_velocities(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,ls,l
 #        ax[1].set_ylabel('')
 #
 #    return fig
-
-

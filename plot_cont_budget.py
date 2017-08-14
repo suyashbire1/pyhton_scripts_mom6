@@ -14,15 +14,15 @@ gv = Variable.GridVariable
 
 def extract_cb_terms_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,le):
 
-    domain = Domain.Domain(geofil,vgeofil,xstart,xend,ystart,yend,ls=ls,le=le) 
+    domain = Domain.Domain(geofil,vgeofil,xstart,xend,ystart,yend,ls=ls,le=le)
 
     with mfdset(fil) as fh, mfdset(fil2) as fh2:
 
-        vhy = gv('vh',domain,'vl',fh2,fh,plot_loc='hl').ysm().read_array(filled=0).ddx(2)
-        uhx = gv('uh',domain,'ul',fh2,fh,plot_loc='hl').xsm().read_array(filled=0).ddx(3)
+        vhy = gv('vh',domain,'vl',fh2,fh,plot_loc='hl').ysm().read_array(filled=0).ddx(2,div_by_area=True)
+        uhx = gv('uh',domain,'ul',fh2,fh,plot_loc='hl').xsm().read_array(filled=0).ddx(3,div_by_area=True)
         wd = gv('wd',domain,'hi',fh2).read_array().o1diff(1)
-    
-    budgetlist = [-uhx*(1/domain.dyT[uhx._slice[2:]]),-vhy*(1/domain.dxT[vhy._slice[2:]]),-wd]
+#    budgetlist = [-uhx*(1/domain.dyT[uhx._slice[2:]]),-vhy*(1/domain.dxT[vhy._slice[2:]]),-wd]
+    budgetlist = [-uhx,-vhy,-wd]
     return budgetlist
 
 def plot_cb_pym6(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,ls,le,meanax,perc=99):
@@ -88,7 +88,7 @@ def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax):
 
         sys.stdout.write('\r'+str(int((i+1)/nt*100))+'% done...')
         sys.stdout.flush()
-            
+
     fh.close()
     print('Total reading time: {}s'.format(time.time()-t0))
 
@@ -112,7 +112,7 @@ def extract_cb_terms(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax):
     X = np.ma.filled(X.astype(float), np.nan)
     Y = np.ma.filled(Y.astype(float), np.nan)
     np.savez('cb_terms', X=X,Y=Y,P=P)
-    
+
     return (X,Y,P)
 
 
@@ -122,9 +122,9 @@ def plot_cb(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
     cmax = np.nanpercentile(np.absolute(P),perc)
     fig,axc = plt.subplots(1,3,sharex=True,sharey=True,figsize=(10, 3))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
-    lab = [ r'$(\bar{h}\hat{u})_{\tilde{x}}$', 
-            r'$(\bar{h}\hat{v})_{\tilde{y}}$', 
-            r'$(\bar{h}\hat{\varpi})_{\tilde{b}}$'] 
+    lab = [ r'$(\bar{h}\hat{u})_{\tilde{x}}$',
+            r'$(\bar{h}\hat{v})_{\tilde{y}}$',
+            r'$(\bar{h}\hat{\varpi})_{\tilde{b}}$']
 
     for i in range(P.shape[-1]):
         ax = axc.ravel()[i]
@@ -140,9 +140,9 @@ def plot_cb(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
     cb = fig.colorbar(im, ax=axc.ravel().tolist())
     cb.formatter.set_powerlimits((0, 0))
     cb.update_ticks()
-    
+
     if savfil:
-        plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
+        plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w',
                     format='eps', transparent=False, bbox_inches='tight')
     else:
         im = m6plot((X,Y,np.sum(P,axis=2)),vmax=cmax,vmin=-cmax,cmap='RdBu_r')

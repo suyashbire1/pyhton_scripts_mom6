@@ -8,9 +8,150 @@ import time
 import pyximport
 pyximport.install()
 from getvaratzc import getvaratzc5, getvaratzc
+from pym6 import Domain, Variable, Plotter
+import importlib
+importlib.reload(Domain)
+importlib.reload(Variable)
+importlib.reload(Plotter)
+gv = Variable.GridVariable
+
+def extract_twamomy_terms_pym6(initializer):
+
+    domain = Domain.Domain(initializer)
+
+    plot_loc = 'vl'
+    with mfdset(initializer.fil) as fh, mfdset(initializer.fil2) as fh2:
+
+        h = (gv('h_Cv',domain,plot_loc,fh2,fh,plot_loc=plot_loc)
+            .read_array(filled=0))
+        vr = (gv('vh',domain,plot_loc,fh2,fh,plot_loc=plot_loc,divisor='h_Cv')
+              .read_array(divide_by_dx=True,filled=0))
+        vrx = (gv('vh',domain,plot_loc,fh2,fh,plot_loc=plot_loc,divisor='h_Cv')
+               .xsm().xep().read_array(extend_kwargs={'method':'vorticity'},
+                                       divide_by_dx=True,filled=0)
+               .ddx(3).move_to(plot_loc))
+        vry = (gv('vh',domain,plot_loc,fh2,fh,plot_loc=plot_loc,divisor='h_Cv')
+               .ysm().yep().read_array(extend_kwargs={'method':'symmetric'},
+                                       divide_by_dx=True,filled=0)
+               .ddx(2).move_to(plot_loc))
+        humx = (gv('uh',domain,'ul',fh2,fh,plot_loc=plot_loc)
+               .xsm().yep().read_array(extend_kwargs={'method':'vorticity'},
+                                       filled=0)
+               .ddx(3,div_by_area=True).move_to(plot_loc))
+        hum = (gv('uh',domain,'ul',fh2,fh,plot_loc=plot_loc).xsm().yep()
+               .read_array(divide_by_dy=True,filled=0,
+                           extend_kwargs={'method':'vorticity'})
+               .move_to('hl').move_to(plot_loc))
+        hvmy = (gv('vh',domain,plot_loc,fh2,fh,plot_loc=plot_loc).ysm().yep()
+               .read_array(filled=0,extend_kwargs={'method':'symmetric'})
+               .ddx(2,div_by_area=True).move_to(plot_loc))
+        huvxphvvym = ((gv('twa_huvxpt',domain,plot_loc,fh2,fh,plot_loc=plot_loc)
+                      .read_array(filled=0))
+                     +(gv('twa_hvvymt',domain,plot_loc,fh2,fh,plot_loc=plot_loc)
+                      .read_array(filled=0)))
+        hvvym = (gv('hvv_Cv',domain,plot_loc,fh2,fh,plot_loc=plot_loc)
+               .ysm().yep().read_array(extend_kwargs={'method':'symmetric'},
+                                       filled=0)
+               .ddx(2,div_by_area=True).move_to(plot_loc))
+        huvxm = -(huvxphvvym + hvvym)
+        vrb = (gv('vh',domain,plot_loc,fh2,fh,plot_loc=plot_loc,divisor='h_Cv')
+               .lsm().lep()
+               .read_array(extend_kwargs={'method':'mirror'},
+                           divide_by_dx=True,filled=0).ddx(1).move_to(plot_loc))
+        hwb = (gv('wd',domain,'hi',fh2,fh,plot_loc=plot_loc)
+               .yep().read_array(filled=0,
+                                 extend_kwargs={'method':'vorticity'})
+               .o1diff(1).move_to(plot_loc))
+        hwm = (gv('wd',domain,'hi',fh2,fh,plot_loc=plot_loc)
+               .yep().read_array(filled=0,
+                                 extend_kwargs={'method':'vorticity'})
+               .move_to('hl').move_to(plot_loc))*domain.db
+        esq = (gv('esq',domain,'hl',fh2,fh,plot_loc=plot_loc)
+               .yep().read_array(extend_kwargs={'method':'mirror'}))
+        e = (gv('e',domain,'hi',fh2,fh,plot_loc=plot_loc)
+               .yep().read_array(extend_kwargs={'method':'mirror'})
+             .move_to('hl'))
+        edlsqm = esq - e*e
+        edlsqmy = edlsqm.ddx(2)
+        hpfv = (gv('twa_hpfv',domain,plot_loc,fh2,fh,plot_loc=plot_loc)
+            .read_array(filled=0))
+        pfvm = (gv('PFv',domain,plot_loc,fh2,fh,plot_loc=plot_loc)
+            .read_array(filled=0))
+        edpfvdmb = -hpfv + h*pfvm - edlsqmy*domain.db*0.5
+        hmfum = (gv('twa_hmfu',domain,plot_loc,fh2,fh,plot_loc=plot_loc)
+            .read_array(filled=0))
+        hvwbm = (gv('twa_hvwb',domain,plot_loc,fh2,fh,plot_loc=plot_loc)
+            .read_array(filled=0))
+        hdiffvm = (gv('twa_hdiffv',domain,plot_loc,fh2,fh,plot_loc=plot_loc)
+            .read_array(filled=0))
+        hdvdtviscm = (gv('twa_hdvdtvisc',domain,plot_loc,
+                         fh2,fh,plot_loc=plot_loc)
+            .read_array(filled=0))
+
+        advx = hum*vrx/h
+        advy = vr*vry
+        advb = hwm*vrb/h
+        cor = hmfum/h
+        pfvm = pfvm
+
+        xdivep1 = -huvxm/h
+        xdivep2 = advx
+        xdivep3 = vr*humx/h
+        xdivep = (xdivep1 + xdivep2 + xdivep3)
+
+        ydivep1 = -hvvym/h
+        ydivep2 = advy
+        ydivep3 = vr*hvmy/h
+        ydivep4 = -edlsqmy/2*domain.db/h
+        ydivep = (ydivep1 + ydivep2 + ydivep3 + ydivep4)
+
+        bdivep1 = hvwbm/h
+        bdivep2 = advb
+        bdivep3 = vr*hwb/h
+        bdivep4 = -edpfvdmb/h
+        bdivep = (bdivep1 + bdivep2 + bdivep3 + bdivep4)
+        Y1twa = hdiffvm/h
+        Y2twa = hdvdtviscm/h
+
+    budgetlist = [-advx,-advy,-advb,cor,pfvm,xdivep,ydivep,bdivep,Y1twa,Y2twa]
+    ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
+    lab = [ r'$-\hat{u}\hat{v}_{\tilde{x}}$',
+            r'$-\hat{v}\hat{v}_{\tilde{y}}$',
+            r'$-\hat{\varpi}\hat{v}_{\tilde{b}}$',
+            r'$-f\hat{u}$',
+            r'$-\overline{m_{\tilde{y}}}$',
+            r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{u^{\prime \prime}v^{\prime \prime}})_{\tilde{x}}$""",
+            r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}v^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{y}}$""",
+            #r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}v^{\prime \prime}})_{\tilde{y}}$""",
+            r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}\varpi ^{\prime \prime}} + \overline{\zeta^\prime m_{\tilde{y}}^\prime})_{\tilde{b}}$""",
+            #r"""$-\frac{1}{\overline{\zeta_{\tilde{b}}}}(\overline{\zeta^\prime m_{\tilde{y}}^\prime})_{\tilde{b}}$""",
+            r'$\widehat{Y^H}$',
+            r'$\widehat{Y^V}$']
+    for i,var in enumerate(budgetlist):
+        var.name = lab[i]
+
+    return budgetlist
+
+def plot_twamomy_pym6(initializer,perc=99):
+    budgetlist = extract_twamomy_terms_pym6(initializer)
+    z = np.linspace(-3000,0)
+    with mfdset(initializer.fil) as fh, mfdset(initializer.fil2) as fh2:
+        e = (gv('e',budgetlist[0].dom,'hi',fh2,fh,plot_loc='vl')
+               .yep().read_array(extend_kwargs={'method':'mirror'})
+             .move_to('vi'))
+    plot_kwargs = dict(cmap='RdBu_r')
+    plotter_kwargs = dict(zcoord=True,z=z,e=e,isop_mean=True)
+
+    fig = Plotter.budget_plot(budgetlist,initializer.meanax,
+                              plot_kwargs=plot_kwargs,
+                              plotter_kwargs=plotter_kwargs,
+                              perc=perc,individual_cbars=False)
+    return fig
+
+
 
 def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,
-      fil3=None,alreadysaved=False,xyasindices=False,calledfrompv=False, 
+      fil3=None,alreadysaved=False,xyasindices=False,calledfrompv=False,
       z=np.linspace(-3000,0,100),htol=1e-3):
 
     if not alreadysaved:
@@ -126,7 +267,10 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         hwb = (fh2.variables['wd'][0:,zs:ze,ys:ye+1,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
         hwb = np.diff(hwb,axis=1)
         hwb_v = 0.5*(hwb[:,:,:-1,:] + hwb[:,:,1:,:])
-        hwm_v = hwb_v*dbl[:,np.newaxis,np.newaxis]
+        hwb = (fh2.variables['wd'][0:,zs:ze,ys:ye+1,xs:xe]*dt).sum(axis=0,keepdims=True)/np.sum(dt)
+        hwm = hwb_v*dbl[:,np.newaxis,np.newaxis]
+        hwm = 0.5*(hwb[:,:-1]+hwb[:,1:])*dbl[:,np.newaxis,np.newaxis]
+        hwm_v = 0.5*(hwm[:,:,:-1,:] + hwm[:,:,1:,:])
         #hwb_v = fh.variables['hwb_Cv'][0:,zs:ze,ys:ye,xs:xe]
         #hwm_v = fh.variables['hw_Cv'][0:,zs:ze,ys:ye,xs:xe]
 
@@ -155,7 +299,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
 
         xdivep1 = -huvxm/h_vm
         xdivep2 = advx
-        xdivep3 = vtwa*humx/h_vm 
+        xdivep3 = vtwa*humx/h_vm
         xdivep = (xdivep1 + xdivep2 + xdivep3)
 
         ydivep1 = -hvvym/h_vm
@@ -166,7 +310,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
 
         bdivep1 = hvwbm/h_vm
         bdivep2 = advb
-        bdivep3 = vtwa*hwb_v/h_vm 
+        bdivep3 = vtwa*hwb_v/h_vm
         bdivep4 = -edpfvdmb/h_vm
         bdivep = (bdivep1 + bdivep2 + bdivep3 + bdivep4)
         Y1twa = hdiffvm/h_vm
@@ -218,7 +362,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
             P = termsm.squeeze()
             Pep = termsepm.squeeze()
 
-        if not calledfrompv: 
+        if not calledfrompv:
             np.savez('twamomy_complete_terms', X=X,Y=Y,P=P,Pep=Pep)
     else:
         npzfile = np.load('twamomy_complete_terms.npz')
@@ -226,7 +370,7 @@ def extract_twamomy_terms(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,
         Y = npzfile['Y']
         P = npzfile['P']
         Pep = npzfile['Pep']
-        
+
     return (X,Y,P,Pep,swash,em.squeeze())
 
 def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fil3=None,
@@ -242,17 +386,17 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fi
     fig,ax = plt.subplots(np.int8(np.ceil(len(plotterms)/2)),2,
                           sharex=True,sharey=True,figsize=(10,5.5))
     ti = ['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)']
-    lab = [ r'$-\hat{u}\hat{v}_{\tilde{x}}$', 
-            r'$-\hat{v}\hat{v}_{\tilde{y}}$', 
-            r'$-\hat{\varpi}\hat{v}_{\tilde{b}}$', 
-            r'$-f\hat{u}$', 
-            r'$-\overline{m_{\tilde{y}}}$', 
-            r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{u^{\prime \prime}v^{\prime \prime}})_{\tilde{x}}$""", 
+    lab = [ r'$-\hat{u}\hat{v}_{\tilde{x}}$',
+            r'$-\hat{v}\hat{v}_{\tilde{y}}$',
+            r'$-\hat{\varpi}\hat{v}_{\tilde{b}}$',
+            r'$-f\hat{u}$',
+            r'$-\overline{m_{\tilde{y}}}$',
+            r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{u^{\prime \prime}v^{\prime \prime}})_{\tilde{x}}$""",
             #r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}v^{\prime \prime}}+\frac{1}{2}\overline{\zeta^{\prime 2}})_{\tilde{y}}$""",
             r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}v^{\prime \prime}})_{\tilde{y}}$""",
             #r"""$-\frac{1}{\overline{h}}(\overline{h}\widehat{v^{\prime \prime}\varpi ^{\prime \prime}} + \overline{\zeta^\prime m_{\tilde{y}}^\prime})_{\tilde{b}}$""",
             r"""$-\frac{1}{\overline{\zeta_{\tilde{b}}}}(\overline{\zeta^\prime m_{\tilde{y}}^\prime})_{\tilde{b}}$""",
-            r'$\widehat{Y^H}$', 
+            r'$\widehat{Y^H}$',
             r'$\widehat{Y^V}$']
 
 
@@ -272,13 +416,13 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fi
             axc.set_ylabel('z (m)')
         if i > np.size(ax)-3:
             xdegtokm(axc,0.5*(ystart+yend))
-            
+
     fig.tight_layout()
     cb = fig.colorbar(im, ax=ax.ravel().tolist())
     cb.formatter.set_powerlimits((0, 0))
-    cb.update_ticks() 
+    cb.update_ticks()
     if savfil:
-        plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
+        plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w',
                     format='eps', transparent=False, bbox_inches='tight')
     else:
         plt.show()
@@ -286,7 +430,7 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fi
     im = m6plot((X,Y,np.sum(P,axis=2)),vmax=cmax,vmin=-cmax,ptype='imshow',
             cmap='RdBu_r',ylim=(-2500,0))
     if savfil:
-        plt.savefig(savfil+'res.eps', dpi=300, facecolor='w', edgecolor='w', 
+        plt.savefig(savfil+'res.eps', dpi=300, facecolor='w', edgecolor='w',
                     format='eps', transparent=False, bbox_inches='tight')
     else:
         plt.show()
@@ -320,14 +464,14 @@ def plot_twamomy(geofil,vgeofil,fil,fil2,xstart,xend,ystart,yend,zs,ze,meanax,fi
 
         if i > np.size(ax)-3:
             xdegtokm(axc,0.5*(ystart+yend))
-            
+
     fig.tight_layout()
     cb = fig.colorbar(im, ax=ax.ravel().tolist())
     cb.formatter.set_powerlimits((0, 0))
     cb.update_ticks()
-    
+
     if savfilep:
-        plt.savefig(savfilep+'.eps', dpi=300, facecolor='w', edgecolor='w', 
+        plt.savefig(savfilep+'.eps', dpi=300, facecolor='w', edgecolor='w',
                     format='eps', transparent=False, bbox_inches='tight')
     else:
         plt.show()
