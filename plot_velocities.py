@@ -19,16 +19,17 @@ importlib.reload(mom_plot1)
 m6plot = mom_plot1.m6plot
 xdegtokm = mom_plot1.xdegtokm
 
-def extract_velocities(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,ls,le,
-       z=np.linspace(-2000,0,100),htol=1e-3,whichterms=None):
+def extract_velocities(initializer):
 
-    domain = Domain.Domain(geofil,vgeofil,
-        xstart,xend,ystart,yend,ls=ls,le=le,ts=0,te=None)
+    htol = initializer.htol #1e-3
+    z = initializer.z
+    meanax = initializer.meanax
+    domain = Domain.Domain(initializer)
 
     fig,ax = plt.subplots(3,3,sharex=True,sharey=True,figsize=(8,8))
     ax = ax.ravel()
 
-    with mfdset(fil) as fh, mfdset(fil2) as fh2:
+    with mfdset(initializer.fil) as fh, mfdset(initializer.fil2) as fh2:
 
         h = -gv('e',domain,'hi',fh2,units='m').read_array().o1diff(1).values
         h[h<htol] = np.nan
@@ -42,18 +43,18 @@ def extract_velocities(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,ls,l
                 name=r'$\bar{u}$').xsm().read_array(filled=0)
         ub = ur - u
         ub.name = r'$\frac{\overline{u^{\prime}h^{\prime}}}{\bar{h}}$'
-        ax[2],im = ur.plot('nanmean',(0,2),zcoord=True,z=z,e=e,
+        ax[2],im = ur.plot('nanmean',meanax,zcoord=True,z=z,e=e,
                 plot_kwargs=dict(cmap='RdBu_r'),clevs=[-0.01,0.01],
                 contour=True,ax=ax[2],perc=99)
         ax[2].plot(domain.lonq[e._plot_slice[3,0]:e._plot_slice[3,1]],
                 np.nanmean(e.values[:,::4],axis=2).squeeze().T,'k')
         vmin,vmax = im.get_clim()
-        u.plot('nanmean',(0,2),zcoord=True,z=z,e=e,clevs=[-0.01,0.01],
+        u.plot('nanmean',meanax,zcoord=True,z=z,e=e,clevs=[-0.01,0.01],
                 plot_kwargs=dict(cmap='RdBu_r',vmin=vmin,vmax=vmax),
                 cbar=False,contour=True,ax=ax[0],perc=99)
         ax[0].plot(domain.lonq[e._plot_slice[3,0]:e._plot_slice[3,1]],
                 np.nanmean(e.values[:,::4],axis=2).squeeze().T,'k')
-        ub.plot('nanmean',(0,2),zcoord=True,z=z,e=e,clevs=[-0.01,0.01],
+        ub.plot('nanmean',meanax,zcoord=True,z=z,e=e,clevs=[-0.01,0.01],
                 plot_kwargs=dict(cmap='RdBu_r',vmin=vmin,vmax=vmax),
                 cbar=False,contour=True,ax=ax[1],perc=99)
         ax[1].plot(domain.lonq[e._plot_slice[3,0]:e._plot_slice[3,1]],
@@ -74,18 +75,18 @@ def extract_velocities(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,ls,l
                 name=r'$\bar{v}$').ysm().read_array(filled=0)
         vb = vr - v
         vb.name = r'$\frac{\overline{v^{\prime}h^{\prime}}}{\bar{h}}$'
-        ax[5],im=vr.plot('nanmean',(0,2),zcoord=True,z=z,e=e,
+        ax[5],im=vr.plot('nanmean',meanax,zcoord=True,z=z,e=e,
                 plot_kwargs=dict(cmap='RdBu_r'),clevs=[-0.12,0.12],
                 contour=True,ax=ax[5],perc=99)
         vmin,vmax = im.get_clim()
         ax[5].plot(domain.lonh[e._plot_slice[3,0]:e._plot_slice[3,1]],
                 np.nanmean(e.values[:,::4],axis=2).squeeze().T,'k')
-        v.plot('nanmean',(0,2),zcoord=True,z=z,e=e,clevs=[-0.12,0.12],
+        v.plot('nanmean',meanax,zcoord=True,z=z,e=e,clevs=[-0.12,0.12],
                 plot_kwargs=dict(cmap='RdBu_r',vmin=vmin,vmax=vmax),
                 contour=True,ax=ax[3],perc=99)
         ax[3].plot(domain.lonh[e._plot_slice[3,0]:e._plot_slice[3,1]],
                 np.nanmean(e.values[:,::4],axis=2).squeeze().T,'k')
-        vb.plot('nanmean',(0,2),zcoord=True,z=z,e=e,clevs=[-0.12,0.12],
+        vb.plot('nanmean',meanax,zcoord=True,z=z,e=e,clevs=[-0.12,0.12],
                 plot_kwargs=dict(cmap='RdBu_r'),
                 contour=True,ax=ax[4],perc=99)
         ax[4].plot(domain.lonh[e._plot_slice[3,0]:e._plot_slice[3,1]],
@@ -104,18 +105,18 @@ def extract_velocities(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,ls,l
         conv.name = r'$\hat{u}\bar{\zeta}_{\tilde{x}}+\hat{v}\bar{\zeta}_{\tilde{y}}$'
         whash = wd + conv
         whash.name = r'$w^{\#}$'
-        ax[8],im=whash.plot('nanmean',(0,2),zcoord=True,z=z,e=e,
+        ax[8],im=whash.plot('nanmean',meanax,zcoord=True,z=z,e=e,
                 plot_kwargs=dict(cmap='RdBu_r'),clevs=[-0.0001,0.0001],
                 contour=True,fmt='%.0e',ax=ax[8],perc=99)
         vmin,vmax = im.get_clim()
         ax[8].plot(domain.lonh[e._plot_slice[3,0]:e._plot_slice[3,1]],
                 np.nanmean(e.values[:,::4],axis=2).squeeze().T,'k')
-        wd.plot('nanmean',(0,2),zcoord=True,z=z,e=e,clevs=[-0.0001,0.0001],
+        wd.plot('nanmean',meanax,zcoord=True,z=z,e=e,clevs=[-0.0001,0.0001],
                 plot_kwargs=dict(cmap='RdBu_r',vmin=vmin,vmax=vmax),
                 contour=True,fmt='%.0e',ax=ax[7],perc=99)
         ax[7].plot(domain.lonh[e._plot_slice[3,0]:e._plot_slice[3,1]],
                 np.nanmean(e.values[:,::4],axis=2).squeeze().T,'k')
-        conv.plot('nanmean',(0,2),zcoord=True,z=z,e=e,clevs=[-0.0001,0.0001],
+        conv.plot('nanmean',meanax,zcoord=True,z=z,e=e,clevs=[-0.0001,0.0001],
                 plot_kwargs=dict(cmap='RdBu_r',vmin=vmin,vmax=vmax),
                 contour=True,fmt='%.0e',ax=ax[6],perc=99,xtokm=True)
         ax[6].plot(domain.lonh[e._plot_slice[3,0]:e._plot_slice[3,1]],
@@ -130,7 +131,7 @@ def extract_velocities(geofil,vgeofil,fil,fil2,fil3,xstart,xend,ystart,yend,ls,l
     fig2,ax = plt.subplots(1,1,figsize=(4,1))
     ax.plot(domain.lonh[e._plot_slice[3,0]:e._plot_slice[3,1]],
             np.nanmean(e.values,axis=2).squeeze().T,'k')
-    xdegtokm(ax,0.5*(ystart+yend))
+    xdegtokm(ax,0.5*(initializer.slat+initializer.nlat))
     ax.set_ylim(-500,0)
     ax.set_ylabel('z (m)')
 

@@ -8,7 +8,6 @@ def m6plot(data,ax=None,**plotkwargs):
     if not ax:
         f = plt.figure(figsize=(8,8/sc.golden))
         ax = f.add_subplot(111)
-    
     cmap = plotkwargs.get('cmap','viridis')
     cbar = plotkwargs.get('cbar',True)
     xlabel = plotkwargs.get('xlabel','')
@@ -78,18 +77,15 @@ def m6plot(data,ax=None,**plotkwargs):
         ax.invert_yaxis()
 
     if savfil:
-        plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w', 
+        plt.savefig(savfil+'.eps', dpi=300, facecolor='w', edgecolor='w',
                 format='eps', transparent=False, bbox_inches='tight')
     else:
         return im
 
 def xdegtokm(ax,y):
     xt = ax.get_xticks()
-    print(xt)
     R = 6400
     xtinkm = R*np.cos(y*np.pi/180)*xt*np.pi/180
-    print(xtinkm)
     ax.set_xticklabels(['{:.0f}'.format(i) for i in xtinkm])
     ax.set_xlabel('x from EB (km)')
     return
-

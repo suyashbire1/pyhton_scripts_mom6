@@ -23,9 +23,9 @@ def extract_cb_terms_pym6(initializer):
         wd = gv('wd',domain,'hi',fh2).read_array().o1diff(1)
 #    budgetlist = [-uhx*(1/domain.dyT[uhx._slice[2:]]),-vhy*(1/domain.dxT[vhy._slice[2:]]),-wd]
     budgetlist = [-uhx,-vhy,-wd]
-    lab = [ r'$(\bar{h}\hat{u})_{\tilde{x}}$',
-            r'$(\bar{h}\hat{v})_{\tilde{y}}$',
-            r'$(\bar{h}\hat{\varpi})_{\tilde{b}}$']
+    lab = [ r'$-(\bar{h}\hat{u})_{\tilde{x}}$',
+            r'$-(\bar{h}\hat{v})_{\tilde{y}}$',
+            r'$-(\bar{h}\hat{\varpi})_{\tilde{b}}$']
     for i,var in enumerate(budgetlist):
         var.name = lab[i]
     return budgetlist
@@ -38,7 +38,7 @@ def plot_cb_pym6(initializer,perc=99):
     plotter_kwargs = dict(zcoord=True,z=initializer.z,e=e,isop_mean=True)
 
     fig = Plotter.budget_plot(budgetlist,initializer.meanax,
-                              plot_kwargs=plot_kwargs,
+                              plot_kwargs=plot_kwargs,ncols=3,
                               plotter_kwargs=plotter_kwargs,
                               perc=perc,individual_cbars=False)
     return fig
@@ -140,7 +140,7 @@ def plot_cb(geofil,fil,xstart,xend,ystart,yend,zs,ze,meanax,
         xdegtokm(ax,0.5*(ystart+yend))
         if i == 0:
             ax.set_ylabel('z (m)')
-        ax.set_ylim(-1500,0)
+        #ax.set_ylim(-1500,0)
 
     fig.tight_layout()
     cb = fig.colorbar(im, ax=axc.ravel().tolist())
