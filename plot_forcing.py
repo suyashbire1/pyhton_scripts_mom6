@@ -76,7 +76,7 @@ def plot_forcing(fil,fil2=None):
     with mfdset(fil) as fh, mfdset(fil2) as fh2:
         geofil = 'ocean_geometry.nc'
         vgeofil = 'Vertical_coordinate.nc'
-        domain = Domain.Domain(geofil,vgeofil,-0.5,0,10,60,ls=0,le=None) 
+        domain = Domain.Domain2(geofil,vgeofil,-0.5,0,10,60,ls=0,le=None)
         e = gv('e',domain,'hi',fh).read_array()
         ax = plt.subplot(gs[4])
         ax.plot(domain.lath[e.plot_slice[2,0]:e.plot_slice[2,1]],np.mean(e.values,axis=(0,3)).T[:,::2],'k',lw=1)
@@ -85,17 +85,17 @@ def plot_forcing(fil,fil2=None):
         ax.set_xlabel('y ($^{\circ}$N)')
         ax.axvline(x=38.5,color='k')
         ax.grid()
-#        swash = gv('islayerdeep',domain,'ql',fh2,
-#                plot_loc='hl').xsm().ysm().read_array(extend_kwargs=dict(method='mirror'),
-#                        tmean=False).move_to('ul').move_to('hl')
-#        swash0 = fh2.variables['islayerdeep'][-1,0,0,320]
-#        swash = (-swash + swash0)*(100/swash0)
-#        z=np.linspace(-3000,0)
-#        swash = swash.toz(z,e)
-#        ax.contour(swash.dom.lath[e.plot_slice[2,0]:e.plot_slice[2,1]],z,np.nanmean(swash.values,axis=(0,3)),levels=[1],colors='r')
-        
+        swash = gv('islayerdeep',domain,'ql',fh2,
+                plot_loc='hl').xsm().ysm().read_array(extend_kwargs=dict(method='mirror'),
+                        tmean=False).move_to('ul').move_to('hl')
+        swash0 = fh2.variables['islayerdeep'][-1,0,0,320]
+        swash = (-swash + swash0)*(100/swash0)
+        z=np.linspace(-3000,0)
+        swash = swash.toz(z,e=e)
+        ax.contour(swash.dom.lath[e.plot_slice[2,0]:e.plot_slice[2,1]],z,np.nanmean(swash.values,axis=(0,3)),levels=[1],colors='r')
 
-        domain = Domain.Domain(geofil,vgeofil,-0.5,0,38,39,ls=0,le=None) 
+
+        domain = Domain.Domain2(geofil,vgeofil,-0.5,0,38,39,ls=0,le=None)
         ax = plt.subplot(gs[5])
         e = gv('e',domain,'hi',fh).read_array()
         ax.plot(domain.lonh[e.plot_slice[3,0]:e.plot_slice[3,1]],np.mean(e.values,axis=(0,2)).T[:,::2],'k',lw=1)
@@ -103,22 +103,20 @@ def plot_forcing(fil,fil2=None):
         ax.set_yticklabels('')
         ax.set_xlabel('x ($^{\circ}$)')
 
-#        swash = gv('islayerdeep',domain,'ql',fh2,
-#                plot_loc='hl').xsm().ysm().read_array(
-#                        tmean=False).move_to('ul').move_to('hl')
-#        swash0 = fh2.variables['islayerdeep'][-1,0,0,320]
-#        swash = (-swash + swash0)*(100/swash0)
-#        z=np.linspace(-3000,0)
-#        swash = swash.toz(z,e)
-#        
-#        ax.contour(swash.dom.lonh[swash.plot_slice[3,0]:swash.plot_slice[3,1]],
-#                z,np.nanmean(swash.values,axis=(0,2)),levels=[1],colors='r')
+        swash = gv('islayerdeep',domain,'ql',fh2,
+                plot_loc='hl').xsm().ysm().read_array(
+                        tmean=False).move_to('ul').move_to('hl')
+        swash0 = fh2.variables['islayerdeep'][-1,0,0,320]
+        swash = (-swash + swash0)*(100/swash0)
+        z=np.linspace(-3000,0)
+        swash = swash.toz(z,e=e)
+
+        ax.contour(swash.dom.lonh[swash.plot_slice[3,0]:swash.plot_slice[3,1]],
+                z,np.nanmean(swash.values,axis=(0,2)),levels=[1],colors='r')
         xdegtokm(ax,(38+39)/2)
         ax.grid()
         #swash.plot('nanmean',(0,2),zcoord=True,e=e,z=np.linspace(-3000,0),cbar=True,ax=ax)
     return fig
 
-    #plt.savefig('meridionalTprof.eps', dpi=300, facecolor='w', edgecolor='w', 
+    #plt.savefig('meridionalTprof.eps', dpi=300, facecolor='w', edgecolor='w',
     #        format='eps', transparent=False, bbox_inches='tight')
-
-
